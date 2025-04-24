@@ -19,7 +19,8 @@ const Register = () => {
     // Champs spécifiques au fournisseur
     Entreprise: "",
     emailPro: "",
-    photo: null,
+    photo: null, // Will store base64 string
+    photoName: "", // Will store the original file name
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -47,10 +48,16 @@ const Register = () => {
         return;
       }
       
-      setFormData({
-        ...formData,
-        photo: file
-      });
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = () => {
+        setFormData({
+          ...formData,
+          photo: reader.result, // base64 string
+          photoName: file.name // original filename
+        });
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -83,44 +90,36 @@ const Register = () => {
       return;
     }
 
-    // Créer un FormData pour gérer l'upload de fichier
-    const formDataToSend = new FormData();
+    // Create a copy of formData to send (no FormData needed with base64)
+    const dataToSend = { ...formData };
     
-    // Ajouter le matricule pour les fournisseurs
-    let matricule = "";
+    // Remove confirmPassword from data to send
+    delete dataToSend.confirmPassword;
+    
+    // Add matricule for suppliers
     if (userType === "fournisseur") {
-      matricule = generateMatricule();
-      formDataToSend.append("matricule", matricule);
-    }
-
-    // Ajouter tous les champs du formulaire
-    Object.keys(formData).forEach(key => {
-      if (key !== 'confirmPassword' && key !== 'photo') {
-        formDataToSend.append(key, formData[key]);
-      }
-    });
-    
-    // Ajouter la photo si présente
-    if (formData.photo) {
-      formDataToSend.append("photo", formData.photo);
+      dataToSend.matricule = generateMatricule();
     }
     
-    // Ajouter le type d'utilisateur
-    formDataToSend.append("typeuser", userType);
+    // Add user type
+    dataToSend.typeuser = userType;
 
     try {
-      // Déterminer l'URL de l'API selon le type d'utilisateur
-      let apiUrl = "http://localhost:3000/api/register";
+      // API URL
+      const apiUrl = "http://localhost:3000/api/register";
 
       const response = await fetch(apiUrl, {
         method: "POST",
-        body: formDataToSend, // Envoyer FormData au lieu de JSON
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend), // Send JSON data
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || "L'inscription a échoué");
 
-      // Message de succès spécifique pour les fournisseurs (mention du matricule envoyé par email)
+      // Success message specific to user type
       if (userType === "fournisseur") {
         setSuccess("Inscription réussie ! Un email contenant votre matricule vous a été envoyé. Redirection vers la page de connexion...");
       } else {
@@ -371,6 +370,16 @@ const Register = () => {
                 className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
                 onChange={handleFileChange}
               />
+              {formData.photo && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500">Image sélectionnée: {formData.photoName}</p>
+                  <img 
+                    src={formData.photo} 
+                    alt="Prévisualisation" 
+                    className="mt-2 h-20 w-auto rounded-md" 
+                  />
+                </div>
+              )}
             </div>
 
             <div>

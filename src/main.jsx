@@ -13,6 +13,7 @@ import UpdateSupplier from "./pages/UpdateSupplier";
 import "./index.css";
 import Panel from "./pages/panel";
 import ResetPassword from "./pages/ResetPassword";
+import Profile from "./pages/Profile";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Router>
@@ -23,6 +24,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
       <Route path="/register" element={<Register />} />
       <Route path="/acceuil" element={<Dashboard />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="/Fourndashboard" element={ <AdminDashboard/>} />
       <Route path="/Admindashboard" element={ <Dashboardadmin/>} />
       <Route path="/add-fournisseur" element={<AddFournisseur />} />
