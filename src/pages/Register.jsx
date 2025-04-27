@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import registerBackground from "../assets/images/nature.png";
-import clientIcon from "../assets/images/client-icon.png";
-import fournisseurIcon from "../assets/images/fournisseur-icon.png";
+import clientImage from "../assets/images/client-image.jpg";
+import fournisseurImage from "../assets/images/fournisseur-image.jpg";
+import agricultureTechImage from "../assets/images/agri-tech-drone.jpg"; // Add this image to your assets
 
 const Register = () => {
   const [userType, setUserType] = useState(null); // null, "client", ou "fournisseur"
@@ -24,6 +25,16 @@ const Register = () => {
   });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Colors for consistent design
+  const colors = {
+    primary: "#3B7A57", // Sacramento green (earthier, less intense)
+    accent: "#F2C94C",  // Harvest gold
+    neutral: "#F5F5F0", // Off-white
+    text: "#333333",    // Dark gray for text
+    border: "#D1D5DB",  // Light gray for borders
+  };
 
   // Définir la date maximale (aujourd'hui) pour le champ date d'inscription
   const today = new Date().toISOString().split("T")[0];
@@ -76,9 +87,11 @@ const Register = () => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setIsSubmitting(true);
 
     if (formData.password !== formData.confirmPassword) {
       setError("Les mots de passe ne correspondent pas!");
+      setIsSubmitting(false);
       return;
     }
 
@@ -87,6 +100,7 @@ const Register = () => {
     const currentDate = new Date();
     if (inscDate > currentDate) {
       setError("La date d'inscription ne peut pas être dans le futur!");
+      setIsSubmitting(false);
       return;
     }
 
@@ -129,6 +143,8 @@ const Register = () => {
       setTimeout(() => (window.location.href = "/login"), 3000);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -136,46 +152,51 @@ const Register = () => {
   if (!userType) {
     return (
       <div
-        className="fixed inset-0 bg-cover bg-center flex items-center justify-center"
-        style={{ backgroundImage: `url(${registerBackground})` }}
+        className="fixed inset-0 bg-[#dcdde1] bg-cover bg-center flex items-center justify-center"
       >
-        <div className="bg-white bg-opacity-80 p-8 rounded-2xl shadow-xl max-w-lg w-full border border-green-300">
-          <h2 className="text-3xl font-bold text-green-700 text-center mb-8">
+        <div className="bg-white bg-opacity-95 p-8 rounded-2xl shadow-2xl max-w-3xl w-full">
+          <h2 className="text-3xl font-bold text-center mb-6" style={{ color: colors.primary }}>
             Bienvenue sur WeeFarm
           </h2>
           
-          <p className="text-center text-gray-600 mb-8">
+          <p className="text-center text-gray-600 mb-8 text-lg">
             Choisissez votre type de compte pour commencer
           </p>
           
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div 
-              className="border-2 border-green-200 hover:border-green-500 rounded-xl p-6 flex flex-col items-center cursor-pointer transition-all hover:bg-green-50"
+              className="border border-gray-200 hover:border-gray-300 rounded-xl p-6 flex flex-col items-center cursor-pointer transition-all hover:shadow-lg hover:scale-105"
               onClick={() => setUserType("client")}
+              style={{ backgroundColor: colors.neutral }}
             >
-              <img 
-                src={clientIcon} 
-                alt="Client" 
-                className="w-32 h-32 mb-4" 
-              />
-              <h3 className="text-xl font-semibold text-green-700">Client</h3>
-              <p className="text-sm text-gray-500 text-center mt-2">
-                Achetez des produits agricoles
+              <div className="w-32 h-32 mb-4 overflow-hidden rounded-lg">
+                <img 
+                  src={clientImage} 
+                  alt="Client" 
+                  className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300" 
+                />
+              </div>
+              <h3 className="text-xl font-semibold" style={{ color: colors.primary }}>Client</h3>
+              <p className="text-sm text-gray-500 text-center mt-2 max-w-xs">
+                Achetez des produits agricoles de qualité directement auprès des producteurs
               </p>
             </div>
             
             <div 
-              className="border-2 border-green-200 hover:border-green-500 rounded-xl p-6 flex flex-col items-center cursor-pointer transition-all hover:bg-green-50"
+              className="border border-gray-200 hover:border-gray-300 rounded-xl p-6 flex flex-col items-center cursor-pointer transition-all hover:shadow-lg hover:scale-105"
               onClick={() => setUserType("fournisseur")}
+              style={{ backgroundColor: colors.neutral }}
             >
-              <img 
-                src={fournisseurIcon} 
-                alt="Fournisseur" 
-                className="w-32 h-32 mb-4"
-              />
-              <h3 className="text-xl font-semibold text-green-700">Fournisseur</h3>
-              <p className="text-sm text-gray-500 text-center mt-2">
-                Vendez vos produits agricoles
+              <div className="w-32 h-32 mb-4 overflow-hidden rounded-lg">
+                <img 
+                  src={fournisseurImage} 
+                  alt="Fournisseur" 
+                  className="w-full h-full object-cover transform hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+              <h3 className="text-xl font-semibold" style={{ color: colors.primary }}>Fournisseur</h3>
+              <p className="text-sm text-gray-500 text-center mt-2 max-w-xs">
+                Vendez vos produits agricoles sur notre plateforme dédiée aux professionnels
               </p>
             </div>
           </div>
@@ -183,7 +204,7 @@ const Register = () => {
           <div className="text-center mt-8">
             <p className="text-sm text-gray-600">
               Déjà un compte ?{" "}
-              <a href="/login" className="text-green-600 hover:underline">
+              <a href="/login" className="font-medium hover:underline" style={{ color: colors.primary }}>
                 Connectez-vous ici
               </a>
             </p>
@@ -196,236 +217,361 @@ const Register = () => {
   // Formulaire pour le type d'utilisateur sélectionné
   return (
     <div
-      className="fixed inset-0 bg-cover bg-center overflow-auto"
-      style={{ backgroundImage: `url(${registerBackground})` }}
+      className="fixed inset-0 bg-[#dcdde1] bg-cover bg-center flex items-center justify-center"
     >
-      <div className="flex items-center justify-center min-h-screen py-10">
-        <div className="bg-white bg-opacity-90 p-8 rounded-2xl shadow-xl max-w-md w-full border border-green-300 my-8">
-          <h2 className="text-3xl font-bold text-green-700 text-center mb-6">
-            {userType === "client" ? "Créer un compte client" : "Créer un compte fournisseur"}
-          </h2>
-
-          {error && <p className="text-red-600 text-center mb-4">{error}</p>}
-          {success && <p className="text-green-600 text-center mb-4">{success}</p>}
-
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600">
-                  Prénom
-                </label>
-                <input
-                  type="text"
-                  name="Prenom"
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                  value={formData.Prenom}
-                  onChange={handleChange}
-                  required
+      <div className="flex items-center justify-center min-h-screen py-8 px-4 w-full">
+        <div className="bg-white bg-opacity-95 rounded-2xl shadow-2xl max-w-3xl w-full my-4 overflow-hidden">
+          <div className="flex flex-col md:flex-row">
+            {/* Sidebar with agricultural tech image instead of green background */}
+            <div className="md:w-2/5 relative overflow-hidden">
+              <div className="absolute inset-0">
+                <img 
+                  src={agricultureTechImage} 
+                  alt="Agriculture Technology" 
+                  className="w-full h-full object-cover"
                 />
+                {/* Overlay to ensure text is readable */}
+                <div className="absolute inset-0 bg-black bg-opacity-40"></div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-600">
-                  Nom
-                </label>
-                <input
-                  type="text"
-                  name="Nom"
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                  value={formData.Nom}
-                  onChange={handleChange}
-                  required
-                />
+              
+              <div className="relative z-10 p-6 flex flex-col justify-center h-full text-white">
+                <h2 className="text-2xl font-bold mb-4">
+                  {userType === "client" ? "Compte Client" : "Compte Fournisseur"}
+                </h2>
+                <p className="text-sm opacity-90 mb-4">
+                  {userType === "client" 
+                    ? "Rejoignez WeeFarm pour accéder à des produits agricoles de qualité." 
+                    : "Vendez vos produits agricoles sur notre plateforme dédiée aux professionnels."}
+                </p>
+                <div className="hidden md:block">
+                  <div className="bg-white bg-opacity-20 p-4 rounded-lg">
+                    <h3 className="font-semibold mb-2">Avantages</h3>
+                    <ul className="text-xs space-y-2">
+                      {userType === "client" ? (
+                        <>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Produits agricoles frais
+                          </li>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Livraison rapide
+                          </li>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Support client dédié
+                          </li>
+                        </>
+                      ) : (
+                        <>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Large audience d'acheteurs
+                          </li>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Gestion simplifiée des commandes
+                          </li>
+                          <li className="flex items-center">
+                            <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                            </svg>
+                            Analyse des ventes
+                          </li>
+                        </>
+                      )}
+                    </ul>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Email
-              </label>
-              <input
-                type="email"
-                name="email"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            {userType === "fournisseur" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600">
-                  Email professionnel
-                </label>
-                <input
-                  type="email"
-                  name="emailPro"
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                  value={formData.emailPro}
-                  onChange={handleChange}
-                  required
-                />
+            {/* Form container - Modified for custom scrolling */}
+            <div className="md:w-3/5 p-6 max-h-[80vh] overflow-y-auto scrollbar-hide"
+                 style={{ 
+                   scrollbarWidth: 'none',  /* Firefox */
+                   msOverflowStyle: 'none',  /* IE and Edge */
+                 }}>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Inscription</h3>
+                <button
+                  type="button"
+                  onClick={() => setUserType(null)}
+                  className="text-sm flex items-center text-gray-600 hover:text-gray-800"
+                >
+                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                  </svg>
+                  Changer de type
+                </button>
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Adresse
-              </label>
-              <input
-                type="text"
-                name="Adresse"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.Adresse}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            {userType === "fournisseur" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-600">
-                  Adresse de l'entreprise
-                </label>
-                <input
-                  type="text"
-                  name="Entreprise"
-                  className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                  value={formData.Entreprise}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Numéro de téléphone
-              </label>
-              <input
-                type="text"
-                name="numtel"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.numtel}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Date de naissance
-              </label>
-              <input
-                type="date"
-                name="dateNaissance"
-                max={today}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.dateNaissance}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Date d'inscription
-              </label>
-              <input
-                type="date"
-                name="Dateinsc"
-                max={today}
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.Dateinsc}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Genre
-              </label>
-              <select
-                name="genre"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.genre}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Sélectionnez</option>
-                <option value="homme">Homme</option>
-                <option value="femme">Femme</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Photo de profil (JPG ou PNG uniquement)
-              </label>
-              <input
-                type="file"
-                name="photo"
-                accept=".jpg,.jpeg,.png"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                onChange={handleFileChange}
-              />
-              {formData.photo && (
-                <div className="mt-2">
-                  <p className="text-xs text-gray-500">Image sélectionnée: {formData.photoName}</p>
-                  <img 
-                    src={formData.photo} 
-                    alt="Prévisualisation" 
-                    className="mt-2 h-20 w-auto rounded-md" 
-                  />
+              {error && (
+                <div className="text-red-600 text-sm mb-4 p-3 bg-red-50 rounded-lg border border-red-100">
+                  {error}
                 </div>
               )}
-            </div>
+              
+              {success && (
+                <div className="text-green-600 text-sm mb-4 p-3 bg-green-50 rounded-lg border border-green-100">
+                  {success}
+                </div>
+              )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Mot de passe
-              </label>
-              <input
-                type="password"
-                name="password"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.password}
-                onChange={handleChange}
-                required
-              />
-            </div>
+              <form onSubmit={handleRegister} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Prénom
+                    </label>
+                    <input
+                      type="text"
+                      name="Prenom"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.Prenom}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Nom
+                    </label>
+                    <input
+                      type="text"
+                      name="Nom"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.Nom}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-600">
-                Confirmez le mot de passe
-              </label>
-              <input
-                type="password"
-                name="confirmPassword"
-                className="w-full p-2 border rounded-md focus:ring-2 focus:ring-green-500"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
-            </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                    style={{ focusRing: colors.primary }}
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
 
-            <div className="flex space-x-4">
-              <button
-                type="button"
-                onClick={() => setUserType(null)}
-                className="w-1/3 py-2 bg-gray-300 text-gray-700 font-semibold rounded-md hover:bg-gray-400 transition-all"
-              >
-                Retour
-              </button>
-              <button
-                type="submit"
-                className="w-2/3 py-2 bg-green-600 text-white font-semibold rounded-md hover:bg-green-700 transition-all"
-              >
-                S'inscrire
-              </button>
+                {userType === "fournisseur" && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Email professionnel
+                    </label>
+                    <input
+                      type="email"
+                      name="emailPro"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.emailPro}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Téléphone
+                    </label>
+                    <input
+                      type="text"
+                      name="numtel"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.numtel}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Genre
+                    </label>
+                    <select
+                      name="genre"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.genre}
+                      onChange={handleChange}
+                      required
+                    >
+                      <option value="">Sélectionnez</option>
+                      <option value="homme">Homme</option>
+                      <option value="femme">Femme</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Adresse
+                  </label>
+                  <input
+                    type="text"
+                    name="Adresse"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                    style={{ focusRing: colors.primary }}
+                    value={formData.Adresse}
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
+
+                {userType === "fournisseur" && (
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Nom de l'entreprise
+                    </label>
+                    <input
+                      type="text"
+                      name="Entreprise"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.Entreprise}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Date de naissance
+                    </label>
+                    <input
+                      type="date"
+                      name="dateNaissance"
+                      max={today}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.dateNaissance}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Date d'inscription
+                    </label>
+                    <input
+                      type="date"
+                      name="Dateinsc"
+                      max={today}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.Dateinsc}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                    Photo de profil (JPG ou PNG uniquement)
+                  </label>
+                  <input
+                    type="file"
+                    name="photo"
+                    accept=".jpg,.jpeg,.png"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                    style={{ focusRing: colors.primary }}
+                    onChange={handleFileChange}
+                  />
+                  {formData.photo && (
+                    <div className="mt-2 flex items-center">
+                      <img 
+                        src={formData.photo} 
+                        alt="Prévisualisation" 
+                        className="h-12 w-12 rounded-full object-cover border border-gray-200" 
+                      />
+                      <p className="text-xs text-gray-500 ml-2">
+                        {formData.photoName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.password}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Confirmez le mot de passe
+                    </label>
+                    <input
+                      type="password"
+                      name="confirmPassword"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-opacity-50"
+                      style={{ focusRing: colors.primary }}
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="pt-4">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-2.5 text-white font-medium rounded-lg hover:scale-[1.01] transition-all duration-200 disabled:opacity-70 shadow-sm text-sm"
+                    style={{ 
+                      background: `linear-gradient(135deg, ${colors.primary}, #2A5E41)`,
+                    }}
+                  >
+                    {isSubmitting ? "Inscription en cours..." : "S'inscrire"}
+                  </button>
+                </div>
+                
+                <div className="text-center pt-2">
+                  <p className="text-sm text-gray-600">
+                    Déjà un compte ?{" "}
+                    <a href="/login" className="font-medium hover:underline" style={{ color: colors.primary }}>
+                      Connectez-vous ici
+                    </a>
+                  </p>
+                </div>
+              </form>
             </div>
-          </form>
+          </div>
         </div>
       </div>
     </div>

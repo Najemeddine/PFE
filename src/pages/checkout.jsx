@@ -1,22 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-const Panel = () => {
+const Checkout = () => {
   const location = useLocation();
-  const cart = location.state?.cart || [];
   const navigate = useNavigate();
+  const cart = location.state?.cart || [];
+  const totalPrice = location.state?.totalPrice || 0;
   const [userName, setUserName] = useState("");
   const [userType, setUserType] = useState("");
   const [userPhoto, setUserPhoto] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSearchBox, setShowSearchBox] = useState(false);
+  const dropdownRef = useRef(null);
   const searchRef = useRef(null);
-  const [totalPrice, setTotalPrice] = useState(0);
-  const [quantities, setQuantities] = useState({});
 
-  // Initialize user data and quantities only once when component mounts
+  // Card payment states
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  // Initialize user data
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -27,27 +34,9 @@ const Panel = () => {
         setUserPhoto(user.photo);
       }
     }
+  }, []);
 
-    // Initialize quantities only once when cart is first loaded
-    if (cart.length > 0 && Object.keys(quantities).length === 0) {
-      const initialQuantities = {};
-      cart.forEach(item => {
-        initialQuantities[item.id] = 1;
-      });
-      setQuantities(initialQuantities);
-    }
-  }, []); // Empty dependency array means this only runs once on mount
-
-  // Calculate total price whenever cart or quantities change
-  // This is a separate useEffect to clearly separate concerns
-  useEffect(() => {
-    const total = cart.reduce((sum, item) => {
-      return sum + (item.prix * (quantities[item.id] || 1));
-    }, 0);
-    setTotalPrice(total);
-  }, [cart, quantities]);
-
-  // Close dropdown when clicking outside
+  // Close dropdown and search when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -100,25 +89,58 @@ const Panel = () => {
     }
   };
 
-  const handleQuantityChange = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-    setQuantities(prevQuantities => ({
-      ...prevQuantities,
-      [productId]: newQuantity
-    }));
+  // Validate card details
+  const validateForm = () => {
+    const newErrors = {};
+    if (!cardNumber.replace(/\s/g, "").match(/^\d{16}$/)) {
+      newErrors.cardNumber = "Le numéro de carte doit contenir 16 chiffres";
+    }
+    if (!cardHolder.trim()) {
+      newErrors.cardHolder = "Le nom du titulaire est requis";
+    }
+    if (!expiryDate.match(/^(0[1-9]|1[0-2])\/([0-9]{2})$/)) {
+      newErrors.expiryDate = "Date d'expiration invalide (MM/AA)";
+    }
+    if (!cvv.match(/^\d{3}$/)) {
+      newErrors.cvv = "Le CVV doit contenir 3 chiffres";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const removeFromCart = (productId) => {
-    const updatedCart = cart.filter(item => item.id !== productId);
-    navigate("/panel", { state: { cart: updatedCart } });
+  // Format card number with spaces
+  const formatCardNumber = (value) => {
+    const digits = value.replace(/\D/g, "");
+    const formatted = digits
+      .slice(0, 16)
+      .replace(/(\d{4})(?=\d)/g, "$1 ");
+    return formatted;
   };
 
-  const proceedToCheckout = () => {
-    const cartWithQuantities = cart.map(item => ({
-      ...item,
-      quantity: quantities[item.id] || 1
-    }));
-    navigate("/checkout", { state: { cart: cartWithQuantities, totalPrice } });
+  // Format expiry date
+  const formatExpiryDate = (value) => {
+    const digits = value.replace(/\D/g, "");
+    if (digits.length > 2) {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}`;
+    }
+    return digits;
+  };
+
+  const handlePayment = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    setIsProcessing(true);
+    try {
+      // Simulate payment processing (replace with actual payment gateway API)
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      alert("Paiement effectué avec succès!");
+      navigate("/acceuil");
+    } catch (error) {
+      setErrors({ general: "Une erreur est survenue lors du paiement" });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const renderNavButtons = () => {
@@ -216,69 +238,72 @@ const Panel = () => {
         <div className="flex flex-col md:flex-row justify-between items-start gap-8">
           <div className="w-full md:w-8/12">
             <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-              <h2 className="text-3xl font-bold text-[#2F4F4F] border-b border-gray-200 pb-4 mb-6">Votre Panier</h2>
-              
-              {cart.length === 0 ? (
-                <div className="py-12 text-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                  </svg>
-                  <p className="text-xl text-gray-600 mb-6">Votre panier est vide</p>
-                  <button 
-                    onClick={() => navigate("/acceuil")}
-                    className="bg-[#FFC107] text-black font-bold py-3 px-6 rounded-full hover:bg-yellow-300 transition shadow-md"
-                  >
-                    Découvrir nos produits
-                  </button>
-                </div>
-              ) : (
+              <h2 className="text-3xl font-bold text-[#2F4F4F] border-b border-gray-200 pb-4 mb-6">Paiement</h2>
+              <form onSubmit={handlePayment} className="space-y-6">
+                {errors.general && (
+                  <div className="bg-red-100 text-red-700 p-4 rounded-md">
+                    {errors.general}
+                  </div>
+                )}
                 <div>
-                  {cart.map((product) => (
-                    <div key={product.id} className="flex flex-col sm:flex-row items-center sm:items-start border-b border-gray-200 py-6 last:border-b-0">
-                      <div className="w-full sm:w-32 h-32 mb-4 sm:mb-0 sm:mr-6">
-                        <img
-                          src={product.imageUrl || `/src/assets/images/produits/${product.Nom}.jpg`}
-                          alt={product.Nom}
-                          className="w-full h-full object-cover rounded-lg"
-                        />
-                      </div>
-                      <div className="flex-grow">
-                        <h3 className="text-xl font-bold text-[#2F4F4F]">{product.Nom}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                        <p className="text-[#6B8E23] font-bold">dt {product.prix}</p>
-                      </div>
-                      <div className="flex flex-row sm:flex-col items-center gap-4 mt-4 sm:mt-0">
-                        <div className="flex items-center border border-gray-300 rounded-md">
-                          <button 
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-l-md"
-                            onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) - 1)}
-                          >
-                            -
-                          </button>
-                          <span className="px-4 py-1">{quantities[product.id] || 1}</span>
-                          <button 
-                            className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-r-md"
-                            onClick={() => handleQuantityChange(product.id, (quantities[product.id] || 1) + 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <button 
-                          className="text-red-500 hover:text-red-700 flex items-center"
-                          onClick={() => removeFromCart(product.id)}
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          Supprimer
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                  <label className="block text-[#2F4F4F] font-semibold mb-2">Numéro de carte</label>
+                  <input
+                    type="text"
+                    value={formatCardNumber(cardNumber)}
+                    onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, ""))}
+                    placeholder="1234 5678 9012 3456"
+                    className={`w-full p-3 border ${errors.cardNumber ? "border-red-500" : "border-[#A9CBA4]"} rounded-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]`}
+                    maxLength={19}
+                  />
+                  {errors.cardNumber && <p className="text-red-500 text-sm mt-1">{errors.cardNumber}</p>}
                 </div>
-              )}
+                <div>
+                  <label className="block text-[#2F4F4F] font-semibold mb-2">Nom du titulaire</label>
+                  <input
+                    type="text"
+                    value={cardHolder}
+                    onChange={(e) => setCardHolder(e.target.value)}
+                    placeholder="Nom sur la carte"
+                    className={`w-full p-3 border ${errors.cardHolder ? "border-red-500" : "border-[#A9CBA4]"} rounded-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]`}
+                  />
+                  {errors.cardHolder && <p className="text-red-500 text-sm mt-1">{errors.cardHolder}</p>}
+                </div>
+                <div className="flex space-x-4">
+                  <div className="w-1/2">
+                    <label className="block text-[#2F4F4F] font-semibold mb-2">Date d'expiration</label>
+                    <input
+                      type="text"
+                      value={formatExpiryDate(expiryDate)}
+                      onChange={(e) => setExpiryDate(e.target.value)}
+                      placeholder="MM/AA"
+                      className={`w-full p-3 border ${errors.expiryDate ? "border-red-500" : "border-[#A9CBA4]"} rounded-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]`}
+                      maxLength={5}
+                    />
+                    {errors.expiryDate && <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>}
+                  </div>
+                  <div className="w-1/2">
+                    <label className="block text-[#2F4F4F] font-semibold mb-2">CVV</label>
+                    <input
+                      type="text"
+                      value={cvv}
+                      onChange={(e) => setCvv(e.target.value.replace(/\D/g, ""))}
+                      placeholder="123"
+                      className={`w-full p-3 border ${errors.cvv ? "border-red-500" : "border-[#A9CBA4]"} rounded-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]`}
+                      maxLength={3}
+                    />
+                    {errors.cvv && <p className="text-red-500 text-sm mt-1">{errors.cvv}</p>}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={isProcessing}
+                  className={`w-full py-3 rounded-full font-bold text-center ${isProcessing ? "bg-gray-300 text-gray-500 cursor-not-allowed" : "bg-[#FFC107] text-black hover:bg-yellow-300 shadow-md"}`}
+                >
+                  {isProcessing ? "Traitement..." : "Payer maintenant"}
+                </button>
+              </form>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h3 className="text-2xl font-bold text-[#2F4F4F] mb-4">Besoin d'aide?</h3>
               <div className="space-y-4">
@@ -303,49 +328,42 @@ const Panel = () => {
               </div>
             </div>
           </div>
-          
+
           <div className="w-full md:w-4/12 sticky top-24">
             <div className="bg-white rounded-xl shadow-lg p-6">
-              <h3 className="text-xl font-bold text-[#2F4F4F] mb-4 border-b border-gray-200 pb-4">Récapitulatif</h3>
+              <h3 className="text-xl font-bold text-[#2F4F4F] mb-4 border-b border-gray-200 pb-4">Récapitulatif de la commande</h3>
               <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Nombre de produits:</span>
-                  <span className="font-semibold">{cart.length}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Sous-total:</span>
-                  <span className="font-semibold">dt {totalPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Livraison:</span>
-                  <span className="font-semibold">dt {cart.length > 0 ? "7.00" : "0.00"}</span>
-                </div>
+                {cart.map((product) => (
+                  <div key={product.id} className="flex items-center space-x-4">
+                    <img
+                      src={product.photo || `/src/assets/images/produits/${product.Nom}.jpg`}
+                      alt={product.Nom}
+                      className="w-16 h-16 object-cover rounded-md"
+                    />
+                    <div className="flex-grow">
+                      <p className="text-[#2F4F4F] font-semibold">{product.Nom}</p>
+                      <p className="text-sm text-gray-600">Quantité: {product.quantity}</p>
+                    </div>
+                    <p className="text-[#6B8E23] font-bold">dt {(product.prix * product.quantity).toFixed(2)}</p>
+                  </div>
+                ))}
                 <div className="border-t border-gray-200 pt-4 mt-4">
-                  <div className="flex justify-between text-xl font-bold">
+                  <div className="flex justify-between">
+                    <span>Sous-total:</span>
+                    <span className="font-semibold">dt {totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Livraison:</span>
+                    <span className="font-semibold">dt 7.00</span>
+                  </div>
+                  <div className="flex justify-between text-xl font-bold mt-4">
                     <span>Total:</span>
-                    <span className="text-[#6B8E23]">dt {cart.length > 0 ? (totalPrice + 7).toFixed(2) : "0.00"}</span>
+                    <span className="text-[#6B8E23]">dt {(totalPrice + 7).toFixed(2)}</span>
                   </div>
                 </div>
-                <button 
-                  onClick={proceedToCheckout}
-                  disabled={cart.length === 0}
-                  className={`w-full py-3 rounded-full font-bold text-center mt-4 ${
-                    cart.length === 0 
-                      ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
-                      : "bg-[#FFC107] text-black hover:bg-yellow-300 shadow-md"
-                  }`}
-                >
-                  Passer à la caisse
-                </button>
-                <button 
-                  onClick={() => navigate("/acceuil")}
-                  className="w-full py-3 border border-[#2F4F4F] text-[#2F4F4F] rounded-full font-bold text-center hover:bg-[#2F4F4F] hover:text-white transition mt-2"
-                >
-                  Continuer vos achats
-                </button>
               </div>
             </div>
-            
+
             <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
               <h3 className="text-xl font-bold text-[#2F4F4F] mb-4">Moyens de paiement</h3>
               <div className="flex justify-between items-center">
@@ -385,4 +403,4 @@ const Panel = () => {
   );
 };
 
-export default Panel;
+export default Checkout;

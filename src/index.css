@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-image: linear-gradient(to bottom right, #dcfce7, #ccfbf1);
+  background-color:#f9f9f9f8;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -52,6 +52,20 @@ button:hover {
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
+}
+input, select,textarea {
+  color: #2D2D2D !important; /* Charcoal text for inputs */
+  background-color: #FEFEFE !important; /* Soft white background */
+  border: 1px solid #D1D5DB; /* Light gray border */
+  border-radius: 12px;
+  padding: 0.8rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: border-color 0.3s ease;
+}
+input:focus, select:focus {
+  border-color: #6B7280; /* Olive green focus border */
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.2);
 }
 
 @media (prefers-color-scheme: light) {

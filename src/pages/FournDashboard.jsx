@@ -37,9 +37,19 @@ const FournDashboard = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [showEditProductModal, setShowEditProductModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const [productIdToDelete, setProductIdToDelete] = useState(null);
   const [newProduct, setNewProduct] = useState({
+    Nom: '',
+    categorie: '',
+    prix: '',
+    description: '',
+    photo: '',
+    stock: '',
+  });
+  const [editProduct, setEditProduct] = useState({
+    id: '',
     Nom: '',
     categorie: '',
     prix: '',
@@ -151,8 +161,46 @@ const FournDashboard = () => {
     setShowDeleteConfirmModal(true);
   };
 
-  const editProduct = (id) => {
-    navigate(`/edit-product/${id}`);
+  const openEditProductModal = (product) => {
+    setEditProduct({
+      id: product.id,
+      Nom: product.Nom,
+      categorie: product.categorie,
+      prix: product.prix,
+      description: product.description || '',
+      photo: product.photo || '',
+      stock: product.stock,
+    });
+    setShowEditProductModal(true);
+  };
+
+  const handleEditProduct = (e) => {
+    e.preventDefault();
+    fetch(`http://localhost:3000/api/produits/${editProduct.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify(editProduct),
+    })
+      .then((res) => res.json())
+      .then(() => {
+        setProducts(products.map((product) =>
+          product.id === editProduct.id ? { ...product, ...editProduct } : product
+        ));
+        setShowEditProductModal(false);
+        setEditProduct({
+          id: '',
+          Nom: '',
+          categorie: '',
+          prix: '',
+          description: '',
+          photo: '',
+          stock: '',
+        });
+      })
+      .catch((err) => console.error('Error updating product:', err));
   };
 
   const handleAddProduct = (e) => {
@@ -188,9 +236,12 @@ const FournDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-100 to-teal-100 font-sans flex">
+    <div className="min-h-screen bg-[#f9f9f9f8] text-gray-900 font-sans flex">
       {/* Sidebar */}
-      <div className="fixed left-0 top-16 h-full w-64 bg-gradient-to-b from-green-600 to-teal-600 shadow-lg border-r border-green-700 z-10">
+      <div className="fixed left-0 top-0 h-full w-64 bg-[#2F4F4F] text-white shadow-lg z-10">
+        <h2 className="text-2xl font-extrabold text-center p-4 border-b border-[#6B8E23]">
+          WeeFarm Fournisseur
+        </h2>
         <nav className="p-4">
           <ul className="space-y-3">
             {[
@@ -201,8 +252,12 @@ const FournDashboard = () => {
               <li
                 key={item.tab}
                 onClick={() => setSelectedTab(item.tab)}
-                className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedTab === item.tab ? 'bg-amber-400 text-gray-900 shadow-md' : 'hover:bg-green-500 text-white'}`}
-                data-tooltip-id="sidebar-tooltip"
+                className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                  selectedTab === item.tab
+                    ? 'bg-[#FFC107] text-[#2F4F4F] shadow-md'
+                    : 'hover:bg-[#6B8E23] text-white'
+                }`}
+                data-tooltip-id={`sidebar-tooltip-${item.tab}`}
                 data-tooltip-content={item.label}
               >
                 <span className="mr-3 text-lg">{item.icon}</span>
@@ -211,32 +266,34 @@ const FournDashboard = () => {
             ))}
           </ul>
         </nav>
-        <ReactTooltip id="sidebar-tooltip" place="right" effect="solid" className="text-sm" />
+        <ReactTooltip id="sidebar-tooltip-statistiques" place="right" effect="solid" className="text-sm" />
+        <ReactTooltip id="sidebar-tooltip-produits" place="right" effect="solid" className="text-sm" />
+        <ReactTooltip id="sidebar-tooltip-compte" place="right" effect="solid" className="text-sm" />
       </div>
 
       {/* Main Dashboard Content */}
-      <div className="flex-1 ml-64 w-full p-6">
+      <div className="flex-1 ml-64 p-6">
         <NavBar />
-        <div className="mt-4">
+        <div className="mt-16 max-w-7xl mx-auto">
           {selectedTab === 'statistiques' && (
             <div>
-              <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-                <FaChartBar className="mr-2 text-green-600" /> Statistiques des Produits
+              <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+                <FaChartBar className="mr-2 text-[#6B8E23]" /> Statistiques des Produits
               </h2>
               {isLoading ? (
-                <div className="text-center text-gray-500 animate-pulse">Chargement des statistiques...</div>
+                <div className="text-center text-gray-500 animate-pulse">Chargement...</div>
               ) : (
                 <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     {[
-                      { label: 'Produits Publiés', value: stats.totalProducts, color: 'bg-green-600', icon: <FaBox /> },
+                      { label: 'Produits Publiés', value: stats.totalProducts, color: 'bg-[#6B8E23]', icon: <FaBox /> },
                       { label: 'En Rupture', value: stats.outOfStock, color: 'bg-red-500', icon: <FaExclamationCircle /> },
-                      { label: 'Note Moyenne', value: (stats.avgRating && !isNaN(Number(stats.avgRating)) ? Number(stats.avgRating).toFixed(1) : '0.0') + '/5', color: 'bg-amber-500', icon: <FaStar /> },
-                      { label: 'Revenu Total', value: `${stats.totalRevenue.toLocaleString()}DT`, color: 'bg-teal-500', icon: <FaDollarSign /> },
+                      { label: 'Note Moyenne', value: (stats.avgRating && !isNaN(Number(stats.avgRating)) ? Number(stats.avgRating).toFixed(1) : '0.0') + '/5', color: 'bg-[#FFC107]', icon: <FaStar /> },
+                      { label: 'Revenu Total', value: `${stats.totalRevenue.toLocaleString()}DT`, color: 'bg-[#2F4F4F]', icon: <FaDollarSign /> },
                     ].map((stat, index) => (
                       <div
                         key={index}
-                        className={`${stat.color} text-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transform hover:scale-105 transition-all duration-200 bg-opacity-90`}
+                        className={`${stat.color} text-white p-6 rounded-xl shadow-xl flex items-center space-x-4 hover:shadow-lg transform hover:scale-105 transition-all duration-300`}
                         data-tooltip-id={`stat-tooltip-${index}`}
                         data-tooltip-content={stat.label}
                       >
@@ -247,16 +304,15 @@ const FournDashboard = () => {
                         </div>
                       </div>
                     ))}
-                    <ReactTooltip id="stat-tooltip-0" place="top" effect="solid" className="text-sm" />
-                    <ReactTooltip id="stat-tooltip-1" place="top" effect="solid" className="text-sm" />
-                    <ReactTooltip id="stat-tooltip-2" place="top" effect="solid" className="text-sm" />
-                    <ReactTooltip id="stat-tooltip-3" place="top" effect="solid" className="text-sm" />
+                    {Array.from({ length: 4 }).map((_, index) => (
+                      <ReactTooltip key={index} id={`stat-tooltip-${index}`} place="top" effect="solid" className="text-sm" />
+                    ))}
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                    <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <FaChartBar className="mr-2 text-green-600" /> Répartition des Produits
+                    <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                      <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                        <FaChartBar className="mr-2 text-[#6B8E23]" /> Répartition des Produits
                       </h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <PieChart>
@@ -271,9 +327,9 @@ const FournDashboard = () => {
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <FaChartLine className="mr-2 text-green-600" /> Ventes (Journalier/Hebdo/Mensuel)
+                    <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                      <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                        <FaChartLine className="mr-2 text-[#6B8E23]" /> Ventes (Journalier/Hebdo/Mensuel)
                       </h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <LineChart data={salesData}>
@@ -282,32 +338,32 @@ const FournDashboard = () => {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} />
+                          <Line type="monotone" dataKey="value" stroke="#6B8E23" strokeWidth={2} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <FaStar className="mr-2 text-amber-500" /> Produits les Mieux Notés
+                    <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                      <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                        <FaStar className="mr-2 text-[#FFC107]" /> Produits les Mieux Notés
                       </h3>
                       <ul className="space-y-2">
                         {bestRatedProducts.map((product) => (
-                          <li key={product.id} className="flex items-center justify-between p-2 bg-green-100 rounded-lg">
-                            <span className='text-gray-500'>{product.Nom}</span>
-                            <span className="flex items-center text-gray-500">
-                              <FaStar className="text-amber-500 mr-1" /> {product.rating}/5
+                          <li key={product.id} className="flex items-center justify-between p-2 bg-[#F9F9F9] rounded-lg">
+                            <span className="text-[#2F4F4F]">{product.Nom}</span>
+                            <span className="flex items-center text-[#2F4F4F]">
+                              <FaStar className="text-[#FFC107] mr-1" /> {product.rating}/5
                             </span>
                           </li>
                         ))}
                       </ul>
                     </div>
 
-                    <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                        <FaChartBar className="mr-2 text-green-600" /> Top 5 Produits les Plus Vendus
+                    <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                      <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                        <FaChartBar className="mr-2 text-[#6B8E23]" /> Top 5 Produits les Plus Vendus
                       </h3>
                       <ResponsiveContainer width="100%" height={300}>
                         <BarChart data={topProducts}>
@@ -316,7 +372,7 @@ const FournDashboard = () => {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Bar dataKey="sales" fill="#22C55E" />
+                          <Bar dataKey="sales" fill="#6B8E23" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -328,22 +384,22 @@ const FournDashboard = () => {
 
           {selectedTab === 'produits' && (
             <div>
-              <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-                <FaBox className="mr-2 text-green-600" /> Liste des Produits
+              <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+                <FaBox className="mr-2 text-[#6B8E23]" /> Liste des Produits
               </h2>
               <button
                 onClick={() => setShowAddProductModal(true)}
-                className="mb-6 flex items-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                className="mb-6 flex items-center px-4 py-2 bg-[#FFC107] text-[#2F4F4F] font-semibold rounded-lg hover:bg-yellow-300 transition-all duration-300 shadow-md hover:shadow-lg"
                 data-tooltip-id="add-product-tooltip"
                 data-tooltip-content="Ajouter un nouveau produit"
               >
                 <FaPlus className="mr-2" /> Ajouter un Produit
               </button>
               <ReactTooltip id="add-product-tooltip" place="top" effect="solid" className="text-sm" />
-              <div className="rounded-xl shadow-lg overflow-hidden">
+              <div className="bg-white rounded-xl shadow-xl overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse">
-                    <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
+                    <thead className="bg-[#2F4F4F] text-white">
                       <tr>
                         <th className="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Photo</th>
                         <th className="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider">Nom</th>
@@ -358,34 +414,34 @@ const FournDashboard = () => {
                       {products.map((product, index) => (
                         <tr
                           key={product.id}
-                          className={`${index % 2 === 0 ? 'bg-gradient-to-r from-green-50 to-teal-50' : 'bg-gradient-to-r from-green-100 to-teal-100'} hover:bg-green-200 transition-all duration-200`}
+                          className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
                         >
                           <td className="py-3 px-4 border-b border-gray-200">
                             <img
                               src={product.photo || `/src/assets/images/produits/${product.Nom}.jpg`}
                               alt={product.Nom}
-                              className="w-10 h-10 object-cover rounded-full shadow-sm"
+                              className="w-10 h-10 object-contain rounded-full shadow-sm"
                             />
                           </td>
-                          <td className="py-3 px-4 border-b border-gray-200 text-gray-800 font-medium">{product.Nom}</td>
-                          <td className="py-3 px-4 border-b border-gray-200 text-gray-600">{product.categorie}</td>
-                          <td className="py-3 px-4 border-b border-gray-200 text-gray-600">{product.prix}DT</td>
-                          <td className="py-3 px-4 border-b border-gray-200 text-gray-600 max-w-xs truncate">{product.description || 'Aucune description'}</td>
+                          <td className="py-3 px-4 border-b border-gray-200 text-[#2F4F4F] font-medium">{product.Nom}</td>
+                          <td className="py-3 px-4 border-b border-gray-200 text-[#2F4F4F]">{product.categorie}</td>
+                          <td className="py-3 px-4 border-b border-gray-200 text-[#2F4F4F]">{product.prix}DT</td>
+                          <td className="py-3 px-4 border-b border-gray-200 text-[#2F4F4F] max-w-xs truncate">{product.description || 'Aucune description'}</td>
                           <td className="py-3 px-4 border-b border-gray-200">
                             <div className="flex items-center space-x-2">
-                              <span className="text-gray-600">{product.stock}</span>
+                              <span className="text-[#2F4F4F]">{product.stock}</span>
                               {product.stock <= 10 ? (
                                 <FaExclamationCircle className="text-red-500" data-tooltip-id={`stock-tooltip-${product.id}`} data-tooltip-content="Stock faible" />
                               ) : (
-                                <FaCheckCircle className="text-green-600" data-tooltip-id={`stock-tooltip-${product.id}`} data-tooltip-content="Stock suffisant" />
+                                <FaCheckCircle className="text-[#6B8E23]" data-tooltip-id={`stock-tooltip-${product.id}`} data-tooltip-content="Stock suffisant" />
                               )}
                               <ReactTooltip id={`stock-tooltip-${product.id}`} place="top" effect="solid" className="text-sm" />
                             </div>
                           </td>
                           <td className="py-3 px-4 border-b border-gray-200 flex space-x-2">
                             <button
-                              onClick={() => editProduct(product.id)}
-                              className="p-2 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                              onClick={() => openEditProductModal(product)}
+                              className="p-2 bg-[#FFC107] text-[#2F4F4F] rounded-full hover:bg-yellow-300 transition-all duration-300 shadow-sm hover:shadow-md"
                               data-tooltip-id={`edit-tooltip-${product.id}`}
                               data-tooltip-content="Modifier le produit"
                             >
@@ -394,7 +450,7 @@ const FournDashboard = () => {
                             <ReactTooltip id={`edit-tooltip-${product.id}`} place="top" effect="solid" className="text-sm" />
                             <button
                               onClick={() => confirmDeleteProduct(product.id)}
-                              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-200 shadow-sm hover:shadow-md transform hover:scale-105"
+                              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
                               data-tooltip-id={`delete-tooltip-${product.id}`}
                               data-tooltip-content="Supprimer le produit"
                             >
@@ -412,27 +468,36 @@ const FournDashboard = () => {
               {/* Add Product Modal */}
               {showAddProductModal && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-                    <h3 className="text-2xl font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaPlus className="mr-2 text-green-600" /> Ajouter un Produit
+                  <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto no-scrollbar">
+                    <style jsx>{`
+                      .no-scrollbar::-webkit-scrollbar {
+                        display: none;
+                      }
+                      .no-scrollbar {
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                      }
+                    `}</style>
+                    <h3 className="text-2xl font-bold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaPlus className="mr-2 text-[#6B8E23]" /> Ajouter un Produit
                     </h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Nom du Produit</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Nom du Produit</label>
                         <input
                           type="text"
                           value={newProduct.Nom}
                           onChange={(e) => setNewProduct({ ...newProduct, Nom: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                           required
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Catégorie</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Catégorie</label>
                         <select
                           value={newProduct.categorie}
                           onChange={(e) => setNewProduct({ ...newProduct, categorie: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                           required
                         >
                           <option value="">Sélectionner une catégorie</option>
@@ -444,28 +509,28 @@ const FournDashboard = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Prix (DT)</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Prix (DT)</label>
                         <input
                           type="number"
                           value={newProduct.prix}
                           onChange={(e) => setNewProduct({ ...newProduct, prix: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                           required
                           min="0"
                           step="0.01"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Description</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Description</label>
                         <textarea
                           value={newProduct.description}
                           onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                           rows="4"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Photo</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Photo</label>
                         <input
                           type="file"
                           accept="image/*"
@@ -479,16 +544,16 @@ const FournDashboard = () => {
                               reader.readAsDataURL(file);
                             }
                           }}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1">Stock</label>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Stock</label>
                         <input
                           type="number"
                           value={newProduct.stock}
                           onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                           required
                           min="0"
                         />
@@ -497,14 +562,128 @@ const FournDashboard = () => {
                         <button
                           type="button"
                           onClick={handleAddProduct}
-                          className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                          className="flex items-center px-4 py-2 bg-[#6B8E23] text-white rounded-lg hover:bg-[#55701C] transition-all duration-300 shadow-md hover:shadow-lg"
                         >
                           <FaSave className="mr-2" /> Ajouter
                         </button>
                         <button
                           type="button"
                           onClick={() => setShowAddProductModal(false)}
-                          className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                          className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                        >
+                          <FaTimes className="mr-2" /> Annuler
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Edit Product Modal */}
+              {showEditProductModal && (
+                <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+                  <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto no-scrollbar">
+                    <style jsx>{`
+                      .no-scrollbar::-webkit-scrollbar {
+                        display: none;
+                      }
+                      .no-scrollbar {
+                        -ms-overflow-style: none;
+                        scrollbar-width: none;
+                      }
+                    `}</style>
+                    <h3 className="text-2xl font-bold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaEdit className="mr-2 text-[#6B8E23]" /> Modifier le Produit
+                    </h3>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Nom du Produit</label>
+                        <input
+                          type="text"
+                          value={editProduct.Nom}
+                          onChange={(e) => setEditProduct({ ...editProduct, Nom: e.target.value })}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Catégorie</label>
+                        <select
+                          value={editProduct.categorie}
+                          onChange={(e) => setEditProduct({ ...editProduct, categorie: e.target.value })}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                          required
+                        >
+                          <option value="">Sélectionner une catégorie</option>
+                          <option value="Fournitures agricoles">Fournitures agricoles</option>
+                          <option value="Équipements et machines agricoles">Équipements et machines agricoles</option>
+                          <option value="Alimentation animale">Alimentation animale</option>
+                          <option value="Engrais">Engrais</option>
+                          <option value="Produits bio">Produits bio</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Prix (DT)</label>
+                        <input
+                          type="number"
+                          value={editProduct.prix}
+                          onChange={(e) => setEditProduct({ ...editProduct, prix: e.target.value })}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                          required
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Description</label>
+                        <textarea
+                          value={editProduct.description}
+                          onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                          rows="4"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Photo</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setEditProduct({ ...editProduct, photo: reader.result });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[#2F4F4F] font-medium mb-1">Stock</label>
+                        <input
+                          type="number"
+                          value={editProduct.stock}
+                          onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                          required
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex space-x-3 pt-4">
+                        <button
+                          type="button"
+                          onClick={handleEditProduct}
+                          className="flex items-center px-4 py-2 bg-[#6B8E23] text-white rounded-lg hover:bg-[#55701C] transition-all duration-300 shadow-md hover:shadow-lg"
+                        >
+                          <FaSave className="mr-2" /> Enregistrer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowEditProductModal(false)}
+                          className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 shadow-md hover:shadow-lg"
                         >
                           <FaTimes className="mr-2" /> Annuler
                         </button>
@@ -517,17 +696,17 @@ const FournDashboard = () => {
               {/* Delete Confirmation Modal */}
               {showDeleteConfirmModal && (
                 <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-all duration-300 scale-95 animate-pop-up">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                  <div className="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full">
+                    <h3 className="text-xl font-bold text-[#2F4F4F] mb-4 flex items-center">
                       <FaTrash className="mr-2 text-red-500" /> Confirmer la Suppression
                     </h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-[#2F4F4F] mb-6">
                       Êtes-vous sûr de vouloir supprimer ce produit ? Cette action est irréversible.
                     </p>
                     <div className="flex space-x-3">
                       <button
                         onClick={() => deleteProduct(productIdToDelete)}
-                        className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 shadow-md hover:shadow-lg"
                       >
                         <FaTrash className="mr-2" /> Confirmer
                       </button>
@@ -536,7 +715,7 @@ const FournDashboard = () => {
                           setShowDeleteConfirmModal(false);
                           setProductIdToDelete(null);
                         }}
-                        className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 shadow-md hover:shadow-lg"
                       >
                         <FaTimes className="mr-2" /> Annuler
                       </button>
@@ -549,98 +728,98 @@ const FournDashboard = () => {
 
           {selectedTab === 'compte' && (
             <div>
-              <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-                <FaUser className="mr-2 text-green-600" /> Mon Compte
+              <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+                <FaUser className="mr-2 text-[#6B8E23]" /> Mon Compte
               </h2>
-              <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg max-w-2xl mx-auto transform hover:shadow-xl transition-all duration-200">
+              <div className="bg-white p-6 rounded-xl shadow-xl max-w-2xl mx-auto hover:shadow-lg transition-all duration-300">
                 {isEditing ? (
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaUser className="mr-2 text-green-600" /> Nom
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaUser className="mr-2 text-[#6B8E23]" /> Nom
                         </label>
                         <input
                           type="text"
                           value={userData.Nom}
                           onChange={(e) => setUserData({ ...userData, Nom: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaUser className="mr-2 text-green-600" /> Prénom
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaUser className="mr-2 text-[#6B8E23]" /> Prénom
                         </label>
                         <input
                           type="text"
                           value={userData.Prenom}
                           onChange={(e) => setUserData({ ...userData, Prenom: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaEnvelope className="mr-2 text-green-600" /> Email
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaEnvelope className="mr-2 text-[#6B8E23]" /> Email
                         </label>
                         <input
                           type="email"
                           value={userData.email}
                           onChange={(e) => setUserData({ ...userData, email: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaEnvelope className="mr-2 text-green-600" /> Email Pro
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaEnvelope className="mr-2 text-[#6B8E23]" /> Email Pro
                         </label>
                         <input
                           type="email"
                           value={userData.emailPro}
                           onChange={(e) => setUserData({ ...userData, emailPro: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaPhone className="mr-2 text-green-600" /> Téléphone
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaPhone className="mr-2 text-[#6B8E23]" /> Téléphone
                         </label>
                         <input
                           type="tel"
                           value={userData.numtel}
                           onChange={(e) => setUserData({ ...userData, numtel: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaMapMarkerAlt className="mr-2 text-green-600" /> Adresse
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaMapMarkerAlt className="mr-2 text-[#6B8E23]" /> Adresse
                         </label>
                         <input
                           type="text"
                           value={userData.Adresse}
                           onChange={(e) => setUserData({ ...userData, Adresse: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaCalendarAlt className="mr-2 text-green-600" /> Date de Naissance
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaCalendarAlt className="mr-2 text-[#6B8E23]" /> Date de Naissance
                         </label>
                         <input
                           type="date"
                           value={userData.dateNaissance}
                           onChange={(e) => setUserData({ ...userData, dateNaissance: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaUser className="mr-2 text-green-600" /> Genre
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaUser className="mr-2 text-[#6B8E23]" /> Genre
                         </label>
                         <select
                           value={userData.genre}
                           onChange={(e) => setUserData({ ...userData, genre: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         >
                           <option value="">Sélectionner</option>
                           <option value="Homme">Homme</option>
@@ -648,30 +827,30 @@ const FournDashboard = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaBuilding className="mr-2 text-green-600" /> Entreprise
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaBuilding className="mr-2 text-[#6B8E23]" /> Entreprise
                         </label>
                         <input
                           type="text"
                           value={userData.Entreprise}
                           onChange={(e) => setUserData({ ...userData, Entreprise: e.target.value })}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaIdCard className="mr-2 text-green-600" /> Matricule
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaIdCard className="mr-2 text-[#6B8E23]" /> Matricule
                         </label>
                         <input
                           type="text"
                           value={userData.matricule}
                           disabled
-                          className="w-full p-2 border border-gray-300 rounded-lg bg-gray-100"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg bg-gray-100"
                         />
                       </div>
                       <div>
-                        <label className="block text-gray-700 font-medium mb-1 flex items-center">
-                          <FaUser className="mr-2 text-green-600" /> Photo
+                        <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                          <FaUser className="mr-2 text-[#6B8E23]" /> Photo
                         </label>
                         <input
                           type="file"
@@ -686,7 +865,7 @@ const FournDashboard = () => {
                               reader.readAsDataURL(file);
                             }
                           }}
-                          className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-600 focus:outline-none transition-all duration-200"
+                          className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
                         />
                       </div>
                     </div>
@@ -694,7 +873,7 @@ const FournDashboard = () => {
                       <button
                         type="button"
                         onClick={handleUpdateProfile}
-                        className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="flex items-center px-4 py-2 bg-[#6B8E23] text-white rounded-lg hover:bg-[#55701C] transition-all duration-300 shadow-md hover:shadow-lg"
                         data-tooltip-id="save-profile-tooltip"
                         data-tooltip-content="Enregistrer les modifications"
                       >
@@ -703,7 +882,7 @@ const FournDashboard = () => {
                       <button
                         type="button"
                         onClick={() => setIsEditing(false)}
-                        className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                        className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 shadow-md hover:shadow-lg"
                         data-tooltip-id="cancel-profile-tooltip"
                         data-tooltip-content="Annuler les modifications"
                       >
@@ -722,40 +901,40 @@ const FournDashboard = () => {
                         className="w-20 h-20 rounded-full object-cover shadow-sm"
                       />
                       <div>
-                        <h3 className="text-xl font-semibold text-gray-800">
+                        <h3 className="text-xl font-bold text-[#2F4F4F]">
                           {userData.Nom} {userData.Prenom}
                         </h3>
-                        <p className="text-gray-600 text-sm flex items-center">
-                          <FaIdCard className="mr-2 text-green-600" /> {userData.matricule}
+                        <p className="text-[#2F4F4F] text-sm flex items-center">
+                          <FaIdCard className="mr-2 text-[#6B8E23]" /> {userData.matricule}
                         </p>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[#2F4F4F]">
                       <p className="flex items-center">
-                        <FaEnvelope className="mr-2 text-green-600" /> <strong>Email:</strong> {userData.email}
+                        <FaEnvelope className="mr-2 text-[#6B8E23]" /> <strong>Email:</strong> {userData.email}
                       </p>
                       <p className="flex items-center">
-                        <FaEnvelope className="mr-2 text-green-600" /> <strong>Email Pro:</strong> {userData.emailPro || 'Non spécifié'}
+                        <FaEnvelope className="mr-2 text-[#6B8E23]" /> <strong>Email Pro:</strong> {userData.emailPro || 'Non spécifié'}
                       </p>
                       <p className="flex items-center">
-                        <FaPhone className="mr-2 text-green-600" /> <strong>Téléphone:</strong> {userData.numtel}
+                        <FaPhone className="mr-2 text-[#6B8E23]" /> <strong>Téléphone:</strong> {userData.numtel}
                       </p>
                       <p className="flex items-center">
-                        <FaMapMarkerAlt className="mr-2 text-green-600" /> <strong>Adresse:</strong> {userData.Adresse}
+                        <FaMapMarkerAlt className="mr-2 text-[#6B8E23]" /> <strong>Adresse:</strong> {userData.Adresse}
                       </p>
                       <p className="flex items-center">
-                        <FaCalendarAlt className="mr-2 text-green-600" /> <strong>Date de Naissance:</strong> {userData.dateNaissance || 'Non spécifié'}
+                        <FaCalendarAlt className="mr-2 text-[#6B8E23]" /> <strong>Date de Naissance:</strong> {userData.dateNaissance || 'Non spécifié'}
                       </p>
                       <p className="flex items-center">
-                        <FaUser className="mr-2 text-green-600" /> <strong>Genre:</strong> {userData.genre || 'Non spécifié'}
+                        <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Genre:</strong> {userData.genre || 'Non spécifié'}
                       </p>
                       <p className="flex items-center">
-                        <FaBuilding className="mr-2 text-green-600" /> <strong>Entreprise:</strong> {userData.Entreprise || 'Non spécifié'}
+                        <FaBuilding className="mr-2 text-[#6B8E23]" /> <strong>Entreprise:</strong> {userData.Entreprise || 'Non spécifié'}
                       </p>
                     </div>
                     <button
                       onClick={() => setIsEditing(true)}
-                      className="flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
+                      className="flex items-center px-4 py-2 bg-[#FFC107] text-[#2F4F4F] rounded-lg hover:bg-yellow-300 transition-all duration-300 shadow-md hover:shadow-lg"
                       data-tooltip-id="edit-profile-tooltip"
                       data-tooltip-content="Modifier votre profil"
                     >
@@ -769,23 +948,6 @@ const FournDashboard = () => {
           )}
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pop-up {
-          0% {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          100% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-
-        .animate-pop-up {
-          animation: pop-up 0.3s ease-out forwards;
-        }
-      `}</style>
     </div>
   );
 };

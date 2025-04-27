@@ -316,10 +316,10 @@ const Navbar = ({ cart = [], addToCart }) => {
   };
 
   return (
-    <nav className="bg-gradient-to-b from-green-600 to-teal-600 shadow-lg border-r border-green-700 text-white p-4 w-full fixed top-0 left-0 z-50">
+    <nav className="bg-[#2F4F4F] shadow-lg border-r border-[#6B8E23] text-white p-4 w-full fixed top-0 left-0 z-50">
       <div className="flex justify-between items-center max-w-7xl mx-auto px-4">
         <div
-          className="text-3xl font-extrabold text-yellow-300 cursor-pointer tracking-tight hover:scale-105 transition-transform"
+          className="text-3xl font-extrabold text-white cursor-pointer tracking-tight hover:scale-105 transition-transform"
           onClick={() => navigate("/")}
         >
           Weefarm

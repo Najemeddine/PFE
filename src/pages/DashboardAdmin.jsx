@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { useNavigate } from "react-router-dom";
-import { FaTachometerAlt, FaUsers, FaUserTie, FaBox, FaShoppingCart, FaChartBar, FaUser, FaSignOutAlt, FaEdit, FaTrashAlt, FaExclamationCircle, FaCheckCircle, FaChartLine } from "react-icons/fa";
+import { FaTachometerAlt, FaUsers, FaUserTie, FaBox, FaShoppingCart, FaChartBar, FaUser, FaSignOutAlt, FaEdit, FaTrashAlt, FaExclamationCircle, FaCheckCircle, FaChartLine, FaSave, FaTimes } from "react-icons/fa";
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import Swal from 'sweetalert2';
 
@@ -11,7 +11,7 @@ const Dashboardadmin = () => {
   const navigate = useNavigate();
   const [selectedTab, setSelectedTab] = useState("dashboard");
   const [userName, setUserName] = useState("");
-  const [userId, setUserId] = useState(null); // Store admin ID for API updates
+  const [userId, setUserId] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
@@ -35,7 +35,6 @@ const Dashboardadmin = () => {
     numtel: '',
   });
 
-  // Static Data for Orders
   const ordersData = [
     { id: "ORD001", client: "Ahmed Ben Salah", date: "2025-04-24", total: 1500, status: "Delivered" },
     { id: "ORD002", client: "Fatima Zohra", date: "2025-04-23", total: 2300, status: "Pending" },
@@ -44,7 +43,6 @@ const Dashboardadmin = () => {
     { id: "ORD005", client: "Youssef Trabelsi", date: "2025-04-20", total: 3200, status: "Delivered" },
   ];
 
-  // Static Data for Statistics
   const orderTrends = [
     { name: "Daily", value: 15 },
     { name: "Weekly", value: 90 },
@@ -71,7 +69,7 @@ const Dashboardadmin = () => {
     if (userData) {
       const user = JSON.parse(userData);
       setUserName(user.Prenom);
-      setUserId(user.id); // Assuming the user object in localStorage has an 'id' field
+      setUserId(user.id);
       setFormData({
         Nom: user.Nom || '',
         Prenom: user.Prenom || '',
@@ -101,11 +99,8 @@ const Dashboardadmin = () => {
         setClients(clientsData);
         setProducts(productsData);
         setStats(statsData);
-
-        // Sort products by rating for best-rated products
         const sortedProducts = [...productsData].sort((a, b) => b.rating - a.rating).slice(0, 5);
         setBestRatedProducts(sortedProducts);
-
         setIsLoading(false);
       })
       .catch(error => {
@@ -237,6 +232,27 @@ const Dashboardadmin = () => {
       Swal.fire('Erreur', 'Une erreur s\'est produite lors de la mise à jour du profil.', 'error');
     }
   };
+  // Format date function
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+
+    try {
+      const date = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) return "Date invalide";
+
+      // Format: DD/MM/YYYY
+      return date.toLocaleDateString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Erreur de date";
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -244,14 +260,20 @@ const Dashboardadmin = () => {
     navigate("/login");
   };
 
+  // Common table container styles
+  const tableContainerStyles = "bg-white rounded-xl shadow-xl overflow-hidden w-full max-w-[1200px] mx-auto";
+  const tableStyles = "w-full table-fixed border-collapse";
+  const thStyles = "py-3 px-2 text-left text-sm font-semibold uppercase tracking-wider whitespace-nowrap";
+  const tdStyles = "py-3 px-2 border-b text-left border-gray-200 text-[#2F4F4F]";
+
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-green-100 to-teal-100 font-sans">
+    <div className="min-h-screen bg-[#f9f9f9f8] text-gray-900 font-sans flex">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 h-full w-64 bg-gradient-to-b from-green-600 to-teal-600 shadow-lg border-r border-green-700 z-10">
-        <h2 className="text-2xl font-bold text-center p-4 text-white border-b border-green-500">
+      <div className="fixed left-0 top-0 h-full w-64 bg-[#2F4F4F] text-white shadow-lg z-10">
+        <h2 className="text-2xl font-extrabold text-center p-4 border-b border-[#6B8E23]">
           Welcome {userName}
         </h2>
-        <nav className="flex-1 p-4">
+        <nav className="p-4">
           <ul className="space-y-3">
             {[
               { tab: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
@@ -265,7 +287,10 @@ const Dashboardadmin = () => {
               <li
                 key={item.tab}
                 onClick={() => setSelectedTab(item.tab)}
-                className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedTab === item.tab ? 'bg-amber-400 text-gray-900 shadow-md' : 'hover:bg-green-500 text-white'}`}
+                className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedTab === item.tab
+                    ? 'bg-[#FFC107] text-[#2F4F4F] shadow-md'
+                    : 'hover:bg-[#6B8E23] text-white'
+                  }`}
                 data-tooltip-id={`sidebar-tooltip-${item.tab}`}
                 data-tooltip-content={item.label}
               >
@@ -277,7 +302,9 @@ const Dashboardadmin = () => {
         </nav>
         <button
           onClick={handleLogout}
-          className="p-4 bg-red-500 text-white text-center font-bold hover:bg-red-600 transition-all duration-200"
+          className="p-4 bg-red-500 text-white text-center font-bold hover:bg-red-600 transition-all duration-300 w-full"
+          data-tooltip-id="logout-tooltip"
+          data-tooltip-content="Se déconnecter"
         >
           <FaSignOutAlt className="inline mr-2" /> Déconnexion
         </button>
@@ -286,14 +313,15 @@ const Dashboardadmin = () => {
         ].map((tab) => (
           <ReactTooltip key={tab} id={`sidebar-tooltip-${tab}`} place="right" effect="solid" className="text-sm" />
         ))}
+        <ReactTooltip id="logout-tooltip" place="top" effect="solid" className="text-sm" />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-6 ml-64">
+      <div className="flex-1 p-6 ml-64 max-w-7xl mx-auto">
         {selectedTab === "dashboard" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaTachometerAlt className="mr-2 text-green-600" /> Dashboard
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaTachometerAlt className="mr-2 text-[#6B8E23]" /> Dashboard
             </h2>
             {isLoading ? (
               <div className="text-center text-gray-500 animate-pulse">Chargement...</div>
@@ -301,14 +329,14 @@ const Dashboardadmin = () => {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   {[
-                    { label: "Total Clients", value: stats.totalClients, color: 'bg-green-600', icon: <FaUsers /> },
-                    { label: "Total Fournisseurs", value: stats.totalSuppliers, color: 'bg-teal-500', icon: <FaUserTie /> },
-                    { label: "Total Commandes", value: stats.totalOrders, color: 'bg-amber-500', icon: <FaShoppingCart /> },
-                    { label: "Total Ventes", value: `${stats.totalSales.toLocaleString()} DT`, color: 'bg-blue-500', icon: <FaChartLine /> },
+                    { label: "Total Clients", value: stats.totalClients, color: 'bg-[#6B8E23]', icon: <FaUsers /> },
+                    { label: "Total Fournisseurs", value: stats.totalSuppliers, color: 'bg-[#2F4F4F]', icon: <FaUserTie /> },
+                    { label: "Total Commandes", value: stats.totalOrders, color: 'bg-[#FFC107]', icon: <FaShoppingCart /> },
+                    { label: "Total Ventes", value: `${stats.totalSales.toLocaleString()} DT`, color: 'bg-[#A9CBA4]', icon: <FaChartLine /> },
                   ].map((stat, index) => (
                     <div
                       key={index}
-                      className={`${stat.color} text-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transform hover:scale-105 transition-all duration-200 bg-opacity-90`}
+                      className={`${stat.color} text-white p-6 rounded-xl shadow-xl flex items-center space-x-4 hover:shadow-lg transform hover:scale-105 transition-all duration-300`}
                       data-tooltip-id={`stat-tooltip-${index}`}
                       data-tooltip-content={stat.label}
                     >
@@ -330,190 +358,233 @@ const Dashboardadmin = () => {
 
         {selectedTab === "utilisateurs" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaUsers className="mr-2 text-green-600" /> Liste des Utilisateurs
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaUsers className="mr-2 text-[#6B8E23]" /> Liste des Utilisateurs
             </h2>
-            <table className="w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-                <tr>
-                  <th className="py-3 px-4 text-left">Nom</th>
-                  <th className="py-3 px-4 text-left">Prénom</th>
-                  <th className="py-3 px-4 text-left">Email</th>
-                  <th className="py-3 px-4 text-left">Date Inscription</th>
-                  <th className="py-3 px-4 text-left">Adresse</th>
-                  <th className="py-3 px-4 text-left">Numéro de Téléphone</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {clients.map((client, index) => (
-                  <tr key={client.id} className={`border-b border-gray-200 ${index % 2 === 0 ? "bg-green-50" : "bg-green-100"} hover:bg-green-200 transition-all duration-200`}>
-                    <td className="py-3 text-gray-800 px-4">{client.Nom}</td>
-                    <td className="py-3 text-gray-800 px-4">{client.Prenom}</td>
-                    <td className="py-3 text-gray-800 px-4">{client.email}</td>
-                    <td className="py-3 text-gray-800 px-4">{client.Dateinsc}</td>
-                    <td className="py-3 text-gray-800 px-4">{client.Adresse}</td>
-                    <td className="py-3 text-gray-800 px-4">{client.numtel}</td>
-                    <td className="py-3 text-gray-800 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => deleteClient(client.id)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-200 shadow-md"
-                          title="Supprimer"
-                        >
-                          <FaTrashAlt size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={tableContainerStyles}>
+              <div className="overflow-x-auto">
+                <table className={tableStyles}>
+                  <thead className="bg-[#2F4F4F] text-white">
+                    <tr>
+                      <th className={`${thStyles} w-[14%]`}>Nom</th>
+                      <th className={`${thStyles} w-[14%]`}>Prénom</th>
+                      <th className={`${thStyles} w-[18%]`}>Email</th>
+                      <th className={`${thStyles} w-[14%]`}>Date Inscription</th>
+                      <th className={`${thStyles} w-[18%]`}>Adresse</th>
+                      <th className={`${thStyles} w-[14%]`}>Téléphone</th>
+                      <th className={`${thStyles} w-[8%] text-center`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clients.map((client, index) => (
+                      <tr
+                        key={client.id}
+                        className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
+                      >
+                        <td className={`${tdStyles} font-medium`}>{client.Nom}</td>
+                        <td className={tdStyles}>{client.Prenom}</td>
+                        <td className={tdStyles}>{client.email}</td>
+                        <td className={tdStyles}>{formatDate(client.Dateinsc)}</td>
+                        <td className={tdStyles}>{client.Adresse}</td>
+                        <td className={tdStyles}>{client.numtel}</td>
+                        <td className={`${tdStyles} text-center`}>
+                          <button
+                            onClick={() => deleteClient(client.id)}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
+                            data-tooltip-id={`delete-client-tooltip-${client.id}`}
+                            data-tooltip-content="Supprimer le client"
+                          >
+                            <FaTrashAlt size={16} />
+                          </button>
+                          <ReactTooltip id={`delete-client-tooltip-${client.id}`} place="top" effect="solid" className="text-sm" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
         {selectedTab === "fournisseurs" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaUserTie className="mr-2 text-green-600" /> Liste des Fournisseurs
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaUserTie className="mr-2 text-[#6B8E23]" /> Liste des Fournisseurs
             </h2>
-            <table className="w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-                <tr>
-                  <th className="py-3 px-4 text-left">Nom</th>
-                  <th className="py-3 px-4 text-left">Prénom</th>
-                  <th className="py-3 px-4 text-left">Email</th>
-                  <th className="py-3 px-4 text-left">Date Inscription</th>
-                  <th className="py-3 px-4 text-left">Entreprise</th>
-                  <th className="py-3 px-4 text-left">Adresse</th>
-                  <th className="py-3 px-4 text-left">Numéro de Téléphone</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {suppliers.map((supplier, index) => (
-                  <tr key={supplier.id} className={`border-b border-gray-200 ${index % 2 === 0 ? "bg-green-50" : "bg-green-100"} hover:bg-green-200 transition-all duration-200`}>
-                    <td className="py-3 text-gray-800 px-4">{supplier.Nom}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.Prenom}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.email}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.Dateinsc}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.Entreprise}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.Adresse}</td>
-                    <td className="py-3 text-gray-800 px-4">{supplier.numtel}</td>
-                    <td className="py-3 text-gray-800 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => deleteSupplier(supplier.id)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-200 shadow-md"
-                          title="Supprimer"
-                        >
-                          <FaTrashAlt size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={tableContainerStyles}>
+              <div className="overflow-x-auto w-full">
+                <table className={`${tableStyles} min-w-full`}>
+                  <thead className="bg-[#2F4F4F] text-white">
+                    <tr>
+                      <th className={`${thStyles} w-[12%]`}>Nom</th>
+                      <th className={`${thStyles} w-[12%]`}>Prénom</th>
+                      <th className={`${thStyles} w-[20%]`}>Email</th>
+                      <th className={`${thStyles} w-[10%]`}>Date</th>
+                      <th className={`${thStyles} w-[12%]`}>Entreprise</th>
+                      <th className={`${thStyles} w-[14%]`}>Adresse</th>
+                      <th className={`${thStyles} w-[10%]`}>Téléphone</th>
+                      <th className={`${thStyles} w-[8%] text-center`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppliers.map((supplier, index) => (
+                      <tr
+                        key={supplier.id}
+                        className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
+                      >
+                        <td className={`${tdStyles} font-medium`}>{supplier.Nom}</td>
+                        <td className={tdStyles}>{supplier.Prenom}</td>
+                        <td className={`${tdStyles} break-words`}>{supplier.email}</td>
+                        <td className={tdStyles}>{formatDate(supplier.Dateinsc)}</td>
+                        <td className={tdStyles}>{supplier.Entreprise}</td>
+                        <td className={tdStyles}>{supplier.Adresse}</td>
+                        <td className={tdStyles}>{supplier.numtel}</td>
+                        <td className={`${tdStyles} text-center`}>
+                          <button
+                            onClick={() => deleteSupplier(supplier.id)}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
+                            data-tooltip-id={`delete-supplier-tooltip-${supplier.id}`}
+                            data-tooltip-content="Supprimer le fournisseur"
+                          >
+                            <FaTrashAlt size={16} />
+                          </button>
+                          <ReactTooltip id={`delete-supplier-tooltip-${supplier.id}`} place="top" effect="solid" className="text-sm" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
         {selectedTab === "produits" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaBox className="mr-2 text-green-600" /> Liste des Produits
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaBox className="mr-2 text-[#6B8E23]" /> Liste des Produits
             </h2>
-            <table className="w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-                <tr>
-                  <th className="py-3 px-4 text-left">Photo</th>
-                  <th className="py-3 px-4 text-left">Nom</th>
-                  <th className="py-3 px-4 text-left">Catégorie</th>
-                  <th className="py-3 px-4 text-left">Prix</th>
-                  <th className="py-3 px-4 text-left">Stock</th>
-                  <th className="py-3 px-4 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product, index) => (
-                  <tr key={product.id} className={`border-b border-gray-200 ${index % 2 === 0 ? "bg-green-50" : "bg-green-100"} hover:bg-green-200 transition-all duration-200`}>
-                    <td className="py-3 px-4">
-                      <img
-                        src={product.photo || `/src/assets/images/produits/${product.Nom}.jpg`}
-                        alt={product.Nom}
-                        className="w-10 h-10 object-cover rounded-full shadow-sm"
-                      />
-                    </td>
-                    <td className="py-3 text-gray-800 px-4">{product.Nom}</td>
-                    <td className="py-3 text-gray-800 px-4">{product.categorie}</td>
-                    <td className="py-3 text-gray-800 px-4">{product.prix} DT</td>
-                    <td className="py-3 text-gray-800 px-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-gray-600">{product.stock}</span>
-                        {product.stock <= 10 ? (
-                          <FaExclamationCircle className="text-red-500" data-tooltip-id={`stock-tooltip-${product.id}`} data-tooltip-content="Stock faible" />
-                        ) : (
-                          <FaCheckCircle className="text-green-600" data-tooltip-id={`stock-tooltip-${product.id}`} data-tooltip-content="Stock suffisant" />
-                        )}
-                        <ReactTooltip id={`stock-tooltip-${product.id}`} place="top" effect="solid" className="text-sm" />
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button
-                          onClick={() => deleteProduct(product.id)}
-                          className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition duration-200 shadow-md"
-                          title="Supprimer"
-                        >
-                          <FaTrashAlt size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={tableContainerStyles}>
+              <div className="overflow-x-auto">
+                <table className={tableStyles}>
+                  <thead className="bg-[#2F4F4F] text-white">
+                    <tr>
+                      <th className={`${thStyles} w-[10%]`}>Photo</th>
+                      <th className={`${thStyles} w-[25%]`}>Nom</th>
+                      <th className={`${thStyles} w-[20%]`}>Catégorie</th>
+                      <th className={`${thStyles} w-[15%]`}>Prix</th>
+                      <th className={`${thStyles} w-[20%]`}>Stock</th>
+                      <th className={`${thStyles} w-[10%] text-center`}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product, index) => (
+                      <tr
+                        key={product.id}
+                        className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
+                      >
+                        <td className={tdStyles}>
+                          <img
+                            src={product.photo || `/src/assets/images/produits/${product.Nom}.jpg`}
+                            alt={product.Nom}
+                            className="w-10 h-10 object-cover rounded-full shadow-sm"
+                          />
+                        </td>
+                        <td className={`${tdStyles} font-medium`}>{product.Nom}</td>
+                        <td className={tdStyles}>{product.categorie}</td>
+                        <td className={tdStyles}>{product.prix} DT</td>
+                        <td className={tdStyles}>
+                          <div className="flex items-center space-x-2">
+                            <span>{product.stock}</span>
+                            {product.stock <= 10 ? (
+                              <FaExclamationCircle
+                                className="text-red-500"
+                                data-tooltip-id={`stock-tooltip-${product.id}`}
+                                data-tooltip-content="Stock faible"
+                              />
+                            ) : (
+                              <FaCheckCircle
+                                className="text-[#6B8E23]"
+                                data-tooltip-id={`stock-tooltip-${product.id}`}
+                                data-tooltip-content="Stock suffisant"
+                              />
+                            )}
+                            <ReactTooltip id={`stock-tooltip-${product.id}`} place="top" effect="solid" className="text-sm" />
+                          </div>
+                        </td>
+                        <td className={`${tdStyles} text-center`}>
+                          <button
+                            onClick={() => deleteProduct(product.id)}
+                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-all duration-300 shadow-sm hover:shadow-md"
+                            data-tooltip-id={`delete-product-tooltip-${product.id}`}
+                            data-tooltip-content="Supprimer le produit"
+                          >
+                            <FaTrashAlt size={16} />
+                          </button>
+                          <ReactTooltip id={`delete-product-tooltip-${product.id}`} place="top" effect="solid" className="text-sm" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
         {selectedTab === "commandes" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaShoppingCart className="mr-2 text-green-600" /> Liste des Commandes
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaShoppingCart className="mr-2 text-[#6B8E23]" /> Liste des Commandes
             </h2>
-            <table className="w-full bg-white border border-gray-200 shadow-md rounded-lg overflow-hidden">
-              <thead className="bg-gradient-to-r from-green-600 to-teal-600 text-white">
-                <tr>
-                  <th className="py-3 px-4 text-left">ID Command Vtde</th>
-                  <th className="py-3 px-4 text-left">Client</th>
-                  <th className="py-3 px-4 text-left">Date</th>
-                  <th className="py-3 px-4 text-left">Total (DT)</th>
-                  <th className="py-3 px-4 text-left">Statut</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ordersData.map((order, index) => (
-                  <tr key={order.id} className={`border-b border-gray-200 ${index % 2 === 0 ? "bg-green-50" : "bg-green-100"} hover:bg-green-200 transition-all duration-200`}>
-                    <td className="py-3 text-gray-800 px-4">{order.id}</td>
-                    <td className="py-3 text-gray-800 px-4">{order.client}</td>
-                    <td className="py-3 text-gray-800 px-4">{order.date}</td>
-                    <td className="py-3 text-gray-800 px-4">{order.total}</td>
-                    <td className="py-3 text-gray-800 px-4">
-                      <span className={`px-2 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered" ? "bg-green-200 text-green-800" : order.status === "Pending" ? "bg-yellow-200 text-yellow-800" : "bg-red-200 text-red-800"}`}>
-                        {order.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={tableContainerStyles}>
+              <div className="overflow-x-auto">
+                <table className={tableStyles}>
+                  <thead className="bg-[#2F4F4F] text-white">
+                    <tr>
+                      <th className={`${thStyles} w-[20%]`}>ID Commande</th>
+                      <th className={`${thStyles} w-[25%]`}>Client</th>
+                      <th className={`${thStyles} w-[20%]`}>Date</th>
+                      <th className={`${thStyles} w-[15%]`}>Total (DT)</th>
+                      <th className={`${thStyles} w-[20%]`}>Statut</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordersData.map((order, index) => (
+                      <tr
+                        key={order.id}
+                        className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
+                      >
+                        <td className={`${tdStyles} font-medium`}>{order.id}</td>
+                        <td className={tdStyles}>{order.client}</td>
+                        <td className={tdStyles}>{order.date}</td>
+                        <td className={tdStyles}>{order.total}</td>
+                        <td className={tdStyles}>
+                          <span
+                            className={`px-2 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered"
+                                ? "bg-[#A9CBA4] text-[#2F4F4F]"
+                                : order.status === "Pending"
+                                  ? "bg-[#FFC107] text-[#2F4F4F]"
+                                  : "bg-red-200 text-red-800"
+                              }`}
+                          >
+                            {order.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
         {selectedTab === "statistiques" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaChartBar className="mr-2 text-green-600" /> Statistiques
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaChartBar className="mr-2 text-[#6B8E23]" /> Statistiques
             </h2>
             {isLoading ? (
               <div className="text-center text-gray-500 animate-pulse">Chargement des statistiques...</div>
@@ -521,14 +592,14 @@ const Dashboardadmin = () => {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                   {[
-                    { label: "Total Clients", value: stats.totalClients, color: 'bg-green-600', icon: <FaUsers /> },
-                    { label: "Total Fournisseurs", value: stats.totalSuppliers, color: 'bg-teal-500', icon: <FaUserTie /> },
-                    { label: "Total Commandes", value: stats.totalOrders, color: 'bg-amber-500', icon: <FaShoppingCart /> },
-                    { label: "Total Ventes", value: `${stats.totalSales.toLocaleString()} DT`, color: 'bg-blue-500', icon: <FaChartLine /> },
+                    { label: "Total Clients", value: stats.totalClients, color: 'bg-[#6B8E23]', icon: <FaUsers /> },
+                    { label: "Total Fournisseurs", value: stats.totalSuppliers, color: 'bg-[#2F4F4F]', icon: <FaUserTie /> },
+                    { label: "Total Commandes", value: stats.totalOrders, color: 'bg-[#FFC107]', icon: <FaShoppingCart /> },
+                    { label: "Total Ventes", value: `${stats.totalSales.toLocaleString()} DT`, color: 'bg-[#A9CBA4]', icon: <FaChartLine /> },
                   ].map((stat, index) => (
                     <div
                       key={index}
-                      className={`${stat.color} text-white p-6 rounded-xl shadow-lg flex items-center space-x-4 transform hover:scale-105 transition-all duration-200 bg-opacity-90`}
+                      className={`${stat.color} text-white p-6 rounded-xl shadow-xl flex items-center space-x-4 hover:shadow-lg transform hover:scale-105 transition-all duration-300`}
                       data-tooltip-id={`stat-tooltip-${index}`}
                       data-tooltip-content={stat.label}
                     >
@@ -544,73 +615,65 @@ const Dashboardadmin = () => {
                   ))}
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaShoppingCart className="mr-2 text-green-600" /> Commandes (Jour/Semaine/Mois)
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaChartLine className="mr-2 text-[#6B8E23]" /> Évolution des Commandes
                     </h3>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="p-4 bg-green-100 rounded-lg">
-                        <p className="text-gray-600">Commandes du Jour</p>
-                        <p className="text-2xl font-bold text-gray-800">{stats.dailyOrders}</p>
-                      </div>
-                      <div className="p-4 bg-green-100 rounded-lg">
-                        <p className="text-gray-600">Commandes de la Semaine</p>
-                        <p className="text-2xl font-bold text-gray-800">{stats.weeklyOrders}</p>
-                      </div>
-                      <div className="p-4 bg-green-100 rounded-lg">
-                        <p className="text-gray-600">Commandes du Mois</p>
-                        <p className="text-2xl font-bold text-gray-800">{stats.monthlyOrders}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaChartLine className="mr-2 text-green-600" /> Évolution des Commandes
-                    </h3>
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={300}>
                       <LineChart data={orderTrends}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
                         <YAxis />
                         <Tooltip />
-                        <Legend verticalAlign="bottom" height={36} />
-                        <Line type="monotone" dataKey="value" stroke="#22C55E" strokeWidth={2} />
+                        <Legend />
+                        <Line type="monotone" dataKey="value" stroke="#6B8E23" strokeWidth={2} />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
 
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaChartBar className="mr-2 text-green-600" /> Répartition des Fournisseurs
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaChartBar className="mr-2 text-[#6B8E23]" /> Répartition des Fournisseurs
                     </h3>
-                    <ResponsiveContainer width="100%" height={250}>
+                    <ResponsiveContainer width="100%" height={300}>
                       <PieChart>
-                        <Pie
-                          data={supplierStats}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={70}
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                        >
+                        <Pie data={supplierStats} dataKey="value" nameKey="name" outerRadius={100} label>
                           {supplierStats.map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                           ))}
                         </Pie>
                         <Tooltip />
-                        <Legend verticalAlign="bottom" height={36} />
+                        <Legend />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaBox className="mr-2 text-green-600" /> Top 5 Produits les Plus Commandés
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaShoppingCart className="mr-2 text-[#6B8E23]" /> Commandes par Période
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes du Jour</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.dailyOrders}</p>
+                      </div>
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes de la Semaine</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.weeklyOrders}</p>
+                      </div>
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes du Mois</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.monthlyOrders}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaBox className="mr-2 text-[#6B8E23]" /> Top 5 Produits les Plus Commandés
                     </h3>
                     <ResponsiveContainer width="100%" height={300}>
                       <BarChart data={topProducts}>
@@ -619,25 +682,9 @@ const Dashboardadmin = () => {
                         <YAxis />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="orders" fill="#22C55E" />
+                        <Bar dataKey="orders" fill="#6B8E23" />
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg transform hover:shadow-xl transition-all duration-200">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                      <FaChartBar className="mr-2 text-green-600" /> Produits les Mieux Notés
-                    </h3>
-                    <ul className="space-y-2">
-                      {bestRatedProducts.map((product) => (
-                        <li key={product.id} className="flex items-center justify-between p-2 bg-green-100 rounded-lg">
-                          <span className="text-gray-500">{product.Nom}</span>
-                          <span className="flex items-center text-gray-500">
-                            <FaChartBar className="text-amber-500 mr-1" /> {product.rating}/5
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 </div>
               </>
@@ -647,125 +694,145 @@ const Dashboardadmin = () => {
 
         {selectedTab === "compte" && (
           <div>
-            <h2 className="text-3xl font-semibold text-gray-800 mb-6 flex items-center">
-              <FaUser className="mr-2 text-green-600" /> Mon Compte
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
+              <FaUser className="mr-2 text-[#6B8E23]" /> Mon Compte
             </h2>
-            <div className="bg-gradient-to-br from-white to-green-50 p-6 rounded-xl shadow-lg max-w-2xl mx-auto transform hover:shadow-xl transition-all duration-200">
-              <div className="flex items-center space-x-4">
-                <div>
-                  <h3 className="text-xl font-semibold text-gray-800">
-                    {formData.Nom} {formData.Prenom}
-                  </h3>
-                  <p className="text-gray-600 text-sm flex items-center">
-                    <FaUser className="mr-2 text-green-600" /> Admin
+            <div className="bg-white p-6 rounded-xl shadow-xl max-w-2xl mx-auto hover:shadow-lg transition-all duration-300">
+              <div className="space-y-6">
+                <div className="flex items-center space-x-4">
+                  <img
+                    src="https://via.placeholder.com/100"
+                    alt="Profile"
+                    className="w-20 h-20 rounded-full object-cover shadow-sm"
+                  />
+                  <div>
+                    <h3 className="text-xl font-bold text-[#2F4F4F]">
+                      {formData.Nom} {formData.Prenom}
+                    </h3>
+                    <p className="text-[#2F4F4F] text-sm">Administrateur</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[#2F4F4F]">
+                  <p className="flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Nom:</strong> {formData.Nom}
+                  </p>
+                  <p className="flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Prénom:</strong> {formData.Prenom}
+                  </p>
+                  <p className="flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Email:</strong> {formData.email}
+                  </p>
+                  <p className="flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Adresse:</strong> {formData.Adresse || 'Non spécifié'}
+                  </p>
+                  <p className="flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> <strong>Téléphone:</strong> {formData.numtel || 'Non spécifié'}
                   </p>
                 </div>
+                <button
+                  onClick={() => setShowModal(true)}
+                  className="flex items-center px-4 py-2 bg-[#FFC107] text-[#2F4F4F] rounded-lg hover:bg-yellow-300 transition-all duration-300 shadow-md hover:shadow-lg"
+                  data-tooltip-id="edit-profile-tooltip"
+                  data-tooltip-content="Modifier votre profil"
+                >
+                  <FaEdit className="mr-2" /> Modifier le Profil
+                </button>
+                <ReactTooltip id="edit-profile-tooltip" place="top" effect="solid" className="text-sm" />
               </div>
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-600">
-                <p className="flex items-center">
-                  <FaUser className="mr-2 text-green-600" /> <strong>Email:</strong> {formData.email}
-                </p>
-                <p className="flex items-center">
-                  <FaUser className="mr-2 text-green-600" /> <strong>Adresse:</strong> {formData.Adresse}
-                </p>
-                <p className="flex items-center">
-                  <FaUser className="mr-2 text-green-600" /> <strong>Téléphone:</strong> {formData.numtel}
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(true)}
-                className="mt-6 flex items-center px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
-              >
-                <FaEdit className="mr-2" /> Modifier le Profil
-              </button>
             </div>
+          </div>
+        )}
 
-            {/* Modal for Editing Profile */}
-            {showModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-4">Modifier le Profil</h3>
-                  <form>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="Nom">
-                        Nom
-                      </label>
-                      <input
-                        type="text"
-                        name="Nom"
-                        value={formData.Nom}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="Prenom">
-                        Prénom
-                      </label>
-                      <input
-                        type="text"
-                        name="Prenom"
-                        value={formData.Prenom}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-                        Email
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="Adresse">
-                        Adresse
-                      </label>
-                      <input
-                        type="text"
-                        name="Adresse"
-                        value={formData.Adresse}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="numtel">
-                        Numéro de Téléphone
-                      </label>
-                      <input
-                        type="text"
-                        name="numtel"
-                        value={formData.numtel}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                      />
-                    </div>
-                    <div className="flex justify-end space-x-3">
-                      <button
-                        type="button"
-                        onClick={() => setShowModal(false)}
-                        className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200"
-                      >
-                        Annuler
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleSaveProfile}
-                        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-200"
-                      >
-                        Enregistrer
-                      </button>
-                    </div>
-                  </form>
+        {/* Edit Profile Modal */}
+        {showModal && (
+          <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
+              <h3 className="text-2xl font-bold text-[#2F4F4F] mb-4 flex items-center">
+                <FaEdit className="mr-2 text-[#6B8E23]" /> Modifier le Profil
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> Nom
+                  </label>
+                  <input
+                    type="text"
+                    name="Nom"
+                    value={formData.Nom}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                  />
                 </div>
+                <div>
+                  <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> Prénom
+                  </label>
+                  <input
+                    type="text"
+                    name="Prenom"
+                    value={formData.Prenom}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> Email
+                  </label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> Adresse
+                  </label>
+                  <input
+                    type="text"
+                    name="Adresse"
+                    value={formData.Adresse}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#2F4F4F] font-medium mb-1 flex items-center">
+                    <FaUser className="mr-2 text-[#6B8E23]" /> Numéro de Téléphone
+                  </label>
+                  <input
+                    type="tel"
+                    name="numtel"
+                    value={formData.numtel}
+                    onChange={handleInputChange}
+                    className="w-full p-2 border border-[#A9CBA4] rounded-lg focus:ring-2 focus:ring-[#6B8E23] focus:outline-none transition-all duration-200"
+                  />
+                </div>
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    onClick={handleSaveProfile}
+                    className="flex items-center px-4 py-2 bg-[#6B8E23] text-white rounded-lg hover:bg-[#55701C] transition-all duration-300 shadow-md hover:shadow-lg"
+                    data-tooltip-id="save-profile-tooltip"
+                    data-tooltip-content="Enregistrer les modifications"
+                  >
+                    <FaSave className="mr-2" /> Enregistrer
+                  </button>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-all duration-300 shadow-md hover:shadow-lg"
+                    data-tooltip-id="cancel-profile-tooltip"
+                    data-tooltip-content="Annuler les modifications"
+                  >
+                    <FaTimes className="mr-2" /> Annuler
+                  </button>
+                </div>
+                <ReactTooltip id="save-profile-tooltip" place="top" effect="solid" className="text-sm" />
+                <ReactTooltip id="cancel-profile-tooltip" place="top" effect="solid" className="text-sm" />
               </div>
-            )}
+            </div>
           </div>
         )}
       </div>

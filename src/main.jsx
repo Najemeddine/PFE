@@ -14,6 +14,7 @@ import "./index.css";
 import Panel from "./pages/panel";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import Checkout from "./pages/checkout";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <Router>
@@ -24,6 +25,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
       <Route path="/register" element={<Register />} />
       <Route path="/acceuil" element={<Dashboard />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/Fourndashboard" element={ <AdminDashboard/>} />
       <Route path="/Admindashboard" element={ <Dashboardadmin/>} />
