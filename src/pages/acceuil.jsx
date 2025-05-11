@@ -19,10 +19,11 @@ const Dashboard = () => {
   const [showSearchBox, setShowSearchBox] = useState(false);
   const searchRef = useRef(null);
 
-  // State for modal and comments
+  // State for modal, comments, and ratings
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
+  const [userRating, setUserRating] = useState(0); // State for user's rating input
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -265,6 +266,7 @@ const Dashboard = () => {
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setComment("");
+    setUserRating(0); // Reset rating when opening modal
   };
 
   // Handle closing the modal
@@ -272,6 +274,7 @@ const Dashboard = () => {
     setSelectedProduct(null);
     setComment("");
     setComments([]); // Clear comments when closing
+    setUserRating(0); // Clear rating when closing
   };
 
   // Handle adding a comment
@@ -309,6 +312,51 @@ const Dashboard = () => {
     }
   };
 
+  // Handle submitting a rating
+  const submitRating = async (productId) => {
+    if (userRating === 0) {
+      alert("Veuillez sélectionner une note entre 1 et 5 étoiles.");
+      return;
+    }
+    if (!userId) {
+      alert("Vous devez être connecté pour noter un produit.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/produits/${productId}/rate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: userId,
+          rating: userRating,
+        }),
+      });
+
+      if (response.ok) {
+        // Refresh the products list to get the updated average rating
+        const updatedProductsResponse = await fetch("http://localhost:3000/api/produits");
+        const updatedProducts = await updatedProductsResponse.json();
+        setProducts(updatedProducts);
+
+        // Update the selected product to reflect the new average rating
+        const updatedProduct = updatedProducts.find((p) => p.id === productId);
+        setSelectedProduct(updatedProduct);
+
+        setUserRating(0); // Reset the rating input
+        alert("Note soumise avec succès !");
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Erreur lors de la soumission de la note.");
+      }
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      alert("Erreur lors de la soumission de la note.");
+    }
+  };
+
   // Render star ratings
   const renderStars = (rating) => {
     const stars = [];
@@ -335,6 +383,7 @@ const Dashboard = () => {
         >
           Produits
         </button>
+        <button className="hover:text-[#FFC107]" onClick={() => navigate("/my-orders")}>Mes Commandes</button>
         <div className="relative" ref={searchRef}>
           <button
             className="hover:text-[#FFC107] flex items-center"
@@ -654,14 +703,14 @@ const Dashboard = () => {
           <div 
             className="bg-[#F9F9F9] rounded-xl shadow-2xl p-8 max-w-lg w-full max-h-[80vh] overflow-y-auto"
             style={{
-              scrollbarWidth: 'none', // Firefox
-              msOverflowStyle: 'none' // IE/Edge
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none'
             }}
           >
             <style>
               {`
                 .hide-scrollbar::-webkit-scrollbar {
-                  display: none; // Chrome, Safari, Opera
+                  display: none;
                 }
               `}
             </style>
@@ -687,20 +736,46 @@ const Dashboard = () => {
                   {selectedProduct.stock > 0 ? "En stock" : "Rupture de stock"}
                 </span>
               </p>
+
+              {/* Add Rating Section */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-[#2F4F4F] mb-2">Votre note</h3>
+                <div className="flex items-center justify-center mb-2">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <span
+                      key={star}
+                      className={`cursor-pointer text-2xl ${
+                        star <= userRating ? "text-[#FFC107]" : "text-gray-300"
+                      }`}
+                      onClick={() => setUserRating(star)}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <button
+                  onClick={() => submitRating(selectedProduct.id)}
+                  className="bg-[#FFC107] text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition"
+                >
+                  Soumettre la note
+                </button>
+              </div>
+
+              {/* Comments Section */}
               <div className="mb-4">
                 <h3 className="text-lg font-semibold text-[#2F4F4F] mb-2">Commentaires</h3>
                 {comments.length > 0 ? (
                   <ul 
                     className="space-y-4 max-h-40 overflow-y-auto"
                     style={{
-                      scrollbarWidth: 'none', // Firefox
-                      msOverflowStyle: 'none' // IE/Edge
+                      scrollbarWidth: 'none',
+                      msOverflowStyle: 'none'
                     }}
                   >
                     <style>
                       {`
                         .hide-scrollbar-nested::-webkit-scrollbar {
-                          display: none; // Chrome, Safari, Opera
+                          display: none;
                         }
                       `}
                     </style>

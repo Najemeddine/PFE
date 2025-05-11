@@ -8,6 +8,7 @@ const Panel = () => {
   const [userName, setUserName] = useState("");
   const [userType, setUserType] = useState("");
   const [userPhoto, setUserPhoto] = useState("");
+  const [userId, setUserId] = useState(null); // Add userId state
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -15,6 +16,7 @@ const Panel = () => {
   const searchRef = useRef(null);
   const [totalPrice, setTotalPrice] = useState(0);
   const [quantities, setQuantities] = useState({});
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // State for success popup
 
   // Initialize user data and quantities only once when component mounts
   useEffect(() => {
@@ -23,6 +25,7 @@ const Panel = () => {
       const user = JSON.parse(userData);
       setUserName(user.Prenom + " " + user.Nom);
       setUserType(user.typeuser);
+      setUserId(user.id); // Set userId
       if (user.photo) {
         setUserPhoto(user.photo);
       }
@@ -36,10 +39,9 @@ const Panel = () => {
       });
       setQuantities(initialQuantities);
     }
-  }, []); // Empty dependency array means this only runs once on mount
+  }, []);
 
   // Calculate total price whenever cart or quantities change
-  // This is a separate useEffect to clearly separate concerns
   useEffect(() => {
     const total = cart.reduce((sum, item) => {
       return sum + (item.prix * (quantities[item.id] || 1));
@@ -69,6 +71,7 @@ const Panel = () => {
     setUserName("");
     setUserType("");
     setUserPhoto("");
+    setUserId(null);
     setDropdownOpen(false);
     navigate("/");
   };
@@ -113,12 +116,58 @@ const Panel = () => {
     navigate("/panel", { state: { cart: updatedCart } });
   };
 
-  const proceedToCheckout = () => {
-    const cartWithQuantities = cart.map(item => ({
-      ...item,
-      quantity: quantities[item.id] || 1
+  const placeOrder = async () => {
+    if (!userId) {
+      alert("Vous devez être connecté pour passer une commande.");
+      return;
+    }
+  
+    const produits = cart.map(item => ({
+      produit_id: item.id,
+      quantite: quantities[item.id] || 1
     }));
-    navigate("/checkout", { state: { cart: cartWithQuantities, totalPrice } });
+  
+    const commandeData = {
+      Client: userId,
+      details: JSON.stringify({
+        totalPrice: totalPrice + (cart.length > 0 ? 7 : 0),
+        items: cart.map(item => ({
+          id: item.id,
+          nom: item.Nom,
+          prix: item.prix,
+          quantite: quantities[item.id] || 1
+        }))
+      }),
+      produits
+    };
+  
+    try {
+      const response = await fetch("http://localhost:3000/api/commandes", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(commandeData),
+      });
+  
+      if (response.ok) {
+        setShowSuccessPopup(true);
+        // Clear the cart after successful order
+        navigate("/panel", { state: { cart: [] } });
+        setQuantities({});
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Erreur lors de la création de la commande.");
+      }
+    } catch (error) {
+      console.error("Error placing order:", error);
+      alert("Erreur lors de la création de la commande.");
+    }
+  };
+
+  const closeSuccessPopup = () => {
+    setShowSuccessPopup(false);
+    navigate("/my-orders"); // Redirect to the orders page after closing the popup
   };
 
   const renderNavButtons = () => {
@@ -126,6 +175,7 @@ const Panel = () => {
       <>
         <button className="hover:text-[#FFC107]" onClick={() => navigate("/acceuil")}>Acceuil</button>
         <button className="hover:text-[#FFC107]" onClick={() => navigate("/acceuil")}>Produits</button>
+        <button className="hover:text-[#FFC107]" onClick={() => navigate("/my-orders")}>Mes Commandes</button>
         <div className="relative" ref={searchRef}>
           <button
             className="hover:text-[#FFC107] flex items-center"
@@ -237,7 +287,7 @@ const Panel = () => {
                     <div key={product.id} className="flex flex-col sm:flex-row items-center sm:items-start border-b border-gray-200 py-6 last:border-b-0">
                       <div className="w-full sm:w-32 h-32 mb-4 sm:mb-0 sm:mr-6">
                         <img
-                          src={product.imageUrl || `/src/assets/images/produits/${product.Nom}.jpg`}
+                          src={product.photo.startsWith('data:image') ? product.photo : `data:image/jpeg;base64,${product.photo}`}
                           alt={product.Nom}
                           className="w-full h-full object-cover rounded-lg"
                         />
@@ -327,7 +377,7 @@ const Panel = () => {
                   </div>
                 </div>
                 <button 
-                  onClick={proceedToCheckout}
+                  onClick={placeOrder}
                   disabled={cart.length === 0}
                   className={`w-full py-3 rounded-full font-bold text-center mt-4 ${
                     cart.length === 0 
@@ -335,7 +385,7 @@ const Panel = () => {
                       : "bg-[#FFC107] text-black hover:bg-yellow-300 shadow-md"
                   }`}
                 >
-                  Passer à la caisse
+                  Passer la commande
                 </button>
                 <button 
                   onClick={() => navigate("/acceuil")}
@@ -345,21 +395,29 @@ const Panel = () => {
                 </button>
               </div>
             </div>
-            
-            <div className="bg-white rounded-xl shadow-lg p-6 mt-6">
-              <h3 className="text-xl font-bold text-[#2F4F4F] mb-4">Moyens de paiement</h3>
-              <div className="flex justify-between items-center">
-                <div className="flex space-x-3">
-                  <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">Visa</div>
-                  <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">MC</div>
-                  <div className="w-12 h-8 bg-gray-200 rounded flex items-center justify-center">PayP</div>
-                </div>
-                <div className="text-[#6B8E23]">100% Sécurisé</div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
+
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-[#F9F9F9] rounded-xl shadow-2xl p-8 max-w-sm w-full">
+            <div className="flex justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-[#6B8E23]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-bold text-[#2F4F4F] text-center mb-4">Commande bien enregistrée en attente</h2>
+            <button
+              onClick={closeSuccessPopup}
+              className="w-full bg-[#FFC107] text-black px-4 py-2 rounded-md hover:bg-yellow-300 transition"
+            >
+              Voir mes commandes
+            </button>
+          </div>
+        </div>
+      )}
 
       <footer className="bg-[#2F4F4F] shadow-lg border-t border-[#6B8E23] text-white py-8">
         <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">

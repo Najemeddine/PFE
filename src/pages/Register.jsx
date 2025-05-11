@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import registerBackground from "../assets/images/nature.png";
 import clientImage from "../assets/images/client-image.jpg";
 import fournisseurImage from "../assets/images/fournisseur-image.jpg";
-import agricultureTechImage from "../assets/images/agri-tech-drone.jpg"; // Add this image to your assets
+import agricultureTechImage from "../assets/images/agri-tech-drone.jpg";
+import weefarmLogo from "../assets/images/weefarm-logo.jpg"; // Added logo import
 
 const Register = () => {
   const [userType, setUserType] = useState(null); // null, "client", ou "fournisseur"
@@ -155,6 +156,15 @@ const Register = () => {
         className="fixed inset-0 bg-[#dcdde1] bg-cover bg-center flex items-center justify-center"
       >
         <div className="bg-white bg-opacity-95 p-8 rounded-2xl shadow-2xl max-w-3xl w-full">
+          {/* Add the WeeFarm logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src={weefarmLogo}
+              alt="WeeFarm Logo"
+              className="h-16 w-auto"
+            />
+          </div>
+
           <h2 className="text-3xl font-bold text-center mb-6" style={{ color: colors.primary }}>
             Bienvenue sur WeeFarm
           </h2>

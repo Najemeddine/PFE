@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, LineChart, Line, CartesianGrid } from "recharts";
 import { useNavigate } from "react-router-dom";
-import { FaTachometerAlt, FaUsers, FaUserTie, FaBox, FaShoppingCart, FaChartBar, FaUser, FaSignOutAlt, FaEdit, FaTrashAlt, FaExclamationCircle, FaCheckCircle, FaChartLine, FaSave, FaTimes } from "react-icons/fa";
+import { FaUsers, FaUserTie, FaBox, FaShoppingCart, FaChartBar, FaUser, FaSignOutAlt, FaEdit, FaTrashAlt, FaExclamationCircle, FaCheckCircle, FaChartLine, FaSave, FaTimes } from "react-icons/fa";
 import { Tooltip as ReactTooltip } from 'react-tooltip';
 import Swal from 'sweetalert2';
 
@@ -9,12 +9,13 @@ const COLORS = ['#22C55E', '#F59E0B', '#3B82F6', '#EC4899', '#14B8A6', '#6B7280'
 
 const Dashboardadmin = () => {
   const navigate = useNavigate();
-  const [selectedTab, setSelectedTab] = useState("dashboard");
+  const [selectedTab, setSelectedTab] = useState("statistiques");
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [clients, setClients] = useState([]);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({
     totalClients: 0,
     totalSuppliers: 0,
@@ -23,6 +24,8 @@ const Dashboardadmin = () => {
     dailyOrders: 0,
     weeklyOrders: 0,
     monthlyOrders: 0,
+    orderTrends: [],
+    topProducts: [],
   });
   const [bestRatedProducts, setBestRatedProducts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,28 +37,6 @@ const Dashboardadmin = () => {
     Adresse: '',
     numtel: '',
   });
-
-  const ordersData = [
-    { id: "ORD001", client: "Ahmed Ben Salah", date: "2025-04-24", total: 1500, status: "Delivered" },
-    { id: "ORD002", client: "Fatima Zohra", date: "2025-04-23", total: 2300, status: "Pending" },
-    { id: "ORD003", client: "Mohamed Ali", date: "2025-04-22", total: 1800, status: "Delivered" },
-    { id: "ORD004", client: "Leila Haddad", date: "2025-04-21", total: 900, status: "Canceled" },
-    { id: "ORD005", client: "Youssef Trabelsi", date: "2025-04-20", total: 3200, status: "Delivered" },
-  ];
-
-  const orderTrends = [
-    { name: "Daily", value: 15 },
-    { name: "Weekly", value: 90 },
-    { name: "Monthly", value: 350 },
-  ];
-
-  const topProducts = [
-    { name: "TRACTEUR", orders: 50 },
-    { name: "NEW HOLLAND TC5040", orders: 40 },
-    { name: "Moissonneuse-batteuse", orders: 30 },
-    { name: "Pompe à eau", orders: 25 },
-    { name: "ENGRAIS NPK 20-10-10", orders: 20 },
-  ];
 
   const supplierStats = [
     { name: "Fournitures agricoles", value: 50 },
@@ -90,16 +71,20 @@ const Dashboardadmin = () => {
       fetch("http://localhost:3000/api/produits", {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       }).then(res => res.json()),
+      fetch("http://localhost:3000/api/commandes", {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      }).then(res => res.json()),
       fetch("http://localhost:3000/api/admin-statistics", {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       }).then(res => res.json()),
     ])
-      .then(([suppliersData, clientsData, productsData, statsData]) => {
+      .then(([suppliersData, clientsData, productsData, ordersData, statsData]) => {
         setSuppliers(suppliersData);
         setClients(clientsData);
         setProducts(productsData);
+        setOrders(ordersData);
         setStats(statsData);
-        const sortedProducts = [...productsData].sort((a, b) => b.rating - a.rating).slice(0, 5);
+        const sortedProducts = [...productsData].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
         setBestRatedProducts(sortedProducts);
         setIsLoading(false);
       })
@@ -232,17 +217,12 @@ const Dashboardadmin = () => {
       Swal.fire('Erreur', 'Une erreur s\'est produite lors de la mise à jour du profil.', 'error');
     }
   };
-  // Format date function
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-
     try {
       const date = new Date(dateString);
-
-      // Check if date is valid
       if (isNaN(date.getTime())) return "Date invalide";
-
-      // Format: DD/MM/YYYY
       return date.toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit',
@@ -260,7 +240,11 @@ const Dashboardadmin = () => {
     navigate("/login");
   };
 
-  // Common table container styles
+  const getFournisseurName = (fournisseurId) => {
+    const fournisseur = suppliers.find(s => s.id === fournisseurId);
+    return fournisseur ? `${fournisseur.Nom} ${fournisseur.Prenom}` : 'Inconnu';
+  };
+
   const tableContainerStyles = "bg-white rounded-xl shadow-xl overflow-hidden w-full max-w-[1200px] mx-auto";
   const tableStyles = "w-full table-fixed border-collapse";
   const thStyles = "py-3 px-2 text-left text-sm font-semibold uppercase tracking-wider whitespace-nowrap";
@@ -268,7 +252,6 @@ const Dashboardadmin = () => {
 
   return (
     <div className="min-h-screen bg-[#f9f9f9f8] text-gray-900 font-sans flex">
-      {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-[#2F4F4F] text-white shadow-lg z-10">
         <h2 className="text-2xl font-extrabold text-center p-4 border-b border-[#6B8E23]">
           Welcome {userName}
@@ -276,12 +259,11 @@ const Dashboardadmin = () => {
         <nav className="p-4">
           <ul className="space-y-3">
             {[
-              { tab: "dashboard", icon: <FaTachometerAlt />, label: "Dashboard" },
+              { tab: "statistiques", icon: <FaChartBar />, label: "Statistiques" },
               { tab: "utilisateurs", icon: <FaUsers />, label: "Utilisateurs" },
               { tab: "fournisseurs", icon: <FaUserTie />, label: "Fournisseurs" },
               { tab: "produits", icon: <FaBox />, label: "Produits" },
               { tab: "commandes", icon: <FaShoppingCart />, label: "Commandes" },
-              { tab: "statistiques", icon: <FaChartBar />, label: "Statistiques" },
               { tab: "compte", icon: <FaUser />, label: "Mon Compte" },
             ].map((item) => (
               <li
@@ -309,22 +291,21 @@ const Dashboardadmin = () => {
           <FaSignOutAlt className="inline mr-2" /> Déconnexion
         </button>
         {[
-          "dashboard", "utilisateurs", "fournisseurs", "produits", "commandes", "statistiques", "compte"
+          "statistiques", "utilisateurs", "fournisseurs", "produits", "commandes", "compte"
         ].map((tab) => (
           <ReactTooltip key={tab} id={`sidebar-tooltip-${tab}`} place="right" effect="solid" className="text-sm" />
         ))}
         <ReactTooltip id="logout-tooltip" place="top" effect="solid" className="text-sm" />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-6 ml-64 max-w-7xl mx-auto">
-        {selectedTab === "dashboard" && (
+        {selectedTab === "statistiques" && (
           <div>
             <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
-              <FaTachometerAlt className="mr-2 text-[#6B8E23]" /> Dashboard
+              <FaChartBar className="mr-2 text-[#6B8E23]" /> Statistiques
             </h2>
             {isLoading ? (
-              <div className="text-center text-gray-500 animate-pulse">Chargement...</div>
+              <div className="text-center text-gray-500 animate-pulse">Chargement des statistiques...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -350,6 +331,79 @@ const Dashboardadmin = () => {
                   {Array.from({ length: 4 }).map((_, index) => (
                     <ReactTooltip key={index} id={`stat-tooltip-${index}`} place="top" effect="solid" className="text-sm" />
                   ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaChartLine className="mr-2 text-[#6B8E23]" /> Évolution des Commandes
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <LineChart data={stats.orderTrends}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Line type="monotone" dataKey="value" stroke="#6B8E23" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaChartBar className="mr-2 text-[#6B8E23]" /> Répartition des Fournisseurs
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie data={supplierStats} dataKey="value" nameKey="name" outerRadius={100} label>
+                          {supplierStats.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                        <Legend />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaShoppingCart className="mr-2 text-[#6B8E23]" /> Commandes par Période
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes du Jour</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.dailyOrders}</p>
+                      </div>
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes de la Semaine</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.weeklyOrders}</p>
+                      </div>
+                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
+                        <p className="text-[#2F4F4F] font-medium">Commandes du Mois</p>
+                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.monthlyOrders}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
+                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
+                      <FaBox className="mr-2 text-[#6B8E23]" /> Top 5 Produits les Plus Commandés
+                    </h3>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={stats.topProducts}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="orders" fill="#6B8E23" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
               </>
             )}
@@ -471,10 +525,11 @@ const Dashboardadmin = () => {
                   <thead className="bg-[#2F4F4F] text-white">
                     <tr>
                       <th className={`${thStyles} w-[10%]`}>Photo</th>
-                      <th className={`${thStyles} w-[25%]`}>Nom</th>
-                      <th className={`${thStyles} w-[20%]`}>Catégorie</th>
+                      <th className={`${thStyles} w-[20%]`}>Nom</th>
+                      <th className={`${thStyles} w-[15%]`}>Catégorie</th>
+                      <th className={`${thStyles} w-[15%]`}>Fournisseur</th>
                       <th className={`${thStyles} w-[15%]`}>Prix</th>
-                      <th className={`${thStyles} w-[20%]`}>Stock</th>
+                      <th className={`${thStyles} w-[15%]`}>Stock</th>
                       <th className={`${thStyles} w-[10%] text-center`}>Actions</th>
                     </tr>
                   </thead>
@@ -493,6 +548,7 @@ const Dashboardadmin = () => {
                         </td>
                         <td className={`${tdStyles} font-medium`}>{product.Nom}</td>
                         <td className={tdStyles}>{product.categorie}</td>
+                        <td className={tdStyles}>{getFournisseurName(product.fournisseur)}</td>
                         <td className={tdStyles}>{product.prix} DT</td>
                         <td className={tdStyles}>
                           <div className="flex items-center space-x-2">
@@ -543,33 +599,46 @@ const Dashboardadmin = () => {
                 <table className={tableStyles}>
                   <thead className="bg-[#2F4F4F] text-white">
                     <tr>
-                      <th className={`${thStyles} w-[20%]`}>ID Commande</th>
-                      <th className={`${thStyles} w-[25%]`}>Client</th>
-                      <th className={`${thStyles} w-[20%]`}>Date</th>
+                      <th className={`${thStyles} w-[15%]`}>ID Commande</th>
+                      <th className={`${thStyles} w-[20%]`}>Client</th>
+                      <th className={`${thStyles} w-[15%]`}>Date</th>
                       <th className={`${thStyles} w-[15%]`}>Total (DT)</th>
-                      <th className={`${thStyles} w-[20%]`}>Statut</th>
+                      <th className={`${thStyles} w-[20%]`}>Produits</th>
+                      <th className={`${thStyles} w-[15%]`}>Statut</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ordersData.map((order, index) => (
+                    {orders.map((order, index) => (
                       <tr
                         key={order.id}
                         className={`${index % 2 === 0 ? 'bg-[#F9F9F9]' : 'bg-white'} hover:bg-gray-100 transition-all duration-200`}
                       >
                         <td className={`${tdStyles} font-medium`}>{order.id}</td>
-                        <td className={tdStyles}>{order.client}</td>
-                        <td className={tdStyles}>{order.date}</td>
+                        <td className={tdStyles}>{order.Client}</td>
+                        <td className={tdStyles}>{formatDate(order.date_creation)}</td>
                         <td className={tdStyles}>{order.total}</td>
                         <td className={tdStyles}>
+                          {order.produits && order.produits.length > 0 ? (
+                            order.produits.map((produit, idx) => (
+                              <span key={idx}>
+                                {produit.Nom}
+                                {idx < order.produits.length - 1 ? ', ' : ''}
+                              </span>
+                            ))
+                          ) : (
+                            <span>Aucun produit</span>
+                          )}
+                        </td>
+                        <td className={tdStyles}>
                           <span
-                            className={`px-2 py-1 rounded-full text-sm font-semibold ${order.status === "Delivered"
+                            className={`px-2 py-1 rounded-full text-sm font-semibold ${order.status === 2
                                 ? "bg-[#A9CBA4] text-[#2F4F4F]"
-                                : order.status === "Pending"
+                                : order.status === 1
                                   ? "bg-[#FFC107] text-[#2F4F4F]"
                                   : "bg-red-200 text-red-800"
                               }`}
                           >
-                            {order.status}
+                            {order.status === 1 ? "En Attente" : order.status === 2 ? "Livrée" : "Annulé"}
                           </span>
                         </td>
                       </tr>
@@ -578,117 +647,6 @@ const Dashboardadmin = () => {
                 </table>
               </div>
             </div>
-          </div>
-        )}
-
-        {selectedTab === "statistiques" && (
-          <div>
-            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-8 flex items-center">
-              <FaChartBar className="mr-2 text-[#6B8E23]" /> Statistiques
-            </h2>
-            {isLoading ? (
-              <div className="text-center text-gray-500 animate-pulse">Chargement des statistiques...</div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                  {[
-                    { label: "Total Clients", value: stats.totalClients, color: 'bg-[#6B8E23]', icon: <FaUsers /> },
-                    { label: "Total Fournisseurs", value: stats.totalSuppliers, color: 'bg-[#2F4F4F]', icon: <FaUserTie /> },
-                    { label: "Total Commandes", value: stats.totalOrders, color: 'bg-[#FFC107]', icon: <FaShoppingCart /> },
-                    { label: "Total Ventes", value: `${stats.totalSales.toLocaleString()} DT`, color: 'bg-[#A9CBA4]', icon: <FaChartLine /> },
-                  ].map((stat, index) => (
-                    <div
-                      key={index}
-                      className={`${stat.color} text-white p-6 rounded-xl shadow-xl flex items-center space-x-4 hover:shadow-lg transform hover:scale-105 transition-all duration-300`}
-                      data-tooltip-id={`stat-tooltip-${index}`}
-                      data-tooltip-content={stat.label}
-                    >
-                      <span className="text-3xl">{stat.icon}</span>
-                      <div>
-                        <h3 className="text-2xl font-bold">{stat.value}</h3>
-                        <p className="text-sm">{stat.label}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <ReactTooltip key={index} id={`stat-tooltip-${index}`} place="top" effect="solid" className="text-sm" />
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
-                      <FaChartLine className="mr-2 text-[#6B8E23]" /> Évolution des Commandes
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={orderTrends}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line type="monotone" dataKey="value" stroke="#6B8E23" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
-                      <FaChartBar className="mr-2 text-[#6B8E23]" /> Répartition des Fournisseurs
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <PieChart>
-                        <Pie data={supplierStats} dataKey="value" nameKey="name" outerRadius={100} label>
-                          {supplierStats.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
-                      <FaShoppingCart className="mr-2 text-[#6B8E23]" /> Commandes par Période
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
-                        <p className="text-[#2F4F4F] font-medium">Commandes du Jour</p>
-                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.dailyOrders}</p>
-                      </div>
-                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
-                        <p className="text-[#2F4F4F] font-medium">Commandes de la Semaine</p>
-                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.weeklyOrders}</p>
-                      </div>
-                      <div className="p-4 bg-[#F9F9F9] rounded-lg">
-                        <p className="text-[#2F4F4F] font-medium">Commandes du Mois</p>
-                        <p className="text-2xl font-bold text-[#2F4F4F]">{stats.monthlyOrders}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-xl shadow-xl hover:shadow-lg transition-all duration-300">
-                    <h3 className="text-lg font-semibold text-[#2F4F4F] mb-4 flex items-center">
-                      <FaBox className="mr-2 text-[#6B8E23]" /> Top 5 Produits les Plus Commandés
-                    </h3>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <BarChart data={topProducts}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="orders" fill="#6B8E23" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-              </>
-            )}
           </div>
         )}
 
@@ -743,7 +701,6 @@ const Dashboardadmin = () => {
           </div>
         )}
 
-        {/* Edit Profile Modal */}
         {showModal && (
           <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-2xl max-w-md w-full">
