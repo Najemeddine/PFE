@@ -1,12 +1,186 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
+const Chatbot = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { sender: "bot", text: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" }
+  ]);
+  const [userInput, setUserInput] = useState("");
+  const messagesEndRef = useRef(null);
+
+  // Predefined questions and answers
+  const suggestions = [
+    {
+      question: "Quels sont vos produits les plus populaires ?",
+      answer: "Nos produits les plus populaires incluent les engrais organiques, les semences bio, et les équipements agricoles comme les pulvérisateurs. Consultez la section 'Nos Produits' pour plus de détails !"
+    },
+    {
+      question: "Livrez-vous à domicile ?",
+      answer: "Oui, nous livrons à domicile dans tout le pays. Les frais de livraison varient selon la région. Ajoutez des produits à votre panier pour voir les options de livraison."
+    },
+    {
+      question: "Comment choisir le bon engrais ?",
+      answer: "Le choix de l'engrais dépend de votre type de sol et de culture. Par exemple, les engrais riches en azote conviennent aux légumes verts. Contactez-nous pour des conseils personnalisés !"
+    },
+    {
+      question: "Proposez-vous des produits bio ?",
+      answer: "Absolument ! Nous avons une large gamme de produits bio, incluant des semences, des engrais, et des pesticides naturels. Filtrez par 'Fournitures agricoles' pour les voir."
+    }
+  ];
+
+  // Scroll to the bottom of the messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const handleSuggestionClick = (suggestion) => {
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: suggestion.question },
+      { sender: "bot", text: suggestion.answer }
+    ]);
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!userInput.trim()) return;
+
+    setMessages((prev) => [
+      ...prev,
+      { sender: "user", text: userInput },
+      { sender: "bot", text: "Merci pour votre question ! Pour une réponse précise, essayez une de nos suggestions ou contactez notre support." }
+    ]);
+    setUserInput("");
+  };
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50">
+      {/* Toggle Button */}
+      {!isOpen && (
+        <button
+          onClick={() => setIsOpen(true)}
+          className="bg-[#FFC107] text-black p-4 rounded-full shadow-lg hover:bg-yellow-300 transition"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* Chatbot Window */}
+      {isOpen && (
+        <div className="bg-[#F9F9F9] rounded-xl shadow-2xl w-80 h-[500px] flex flex-col">
+          {/* Header */}
+          <div className="bg-[#2F4F4F] text-white p-4 rounded-t-xl flex justify-between items-center">
+            <h3 className="font-bold">WeeFarm Assistant</h3>
+            <button onClick={() => setIsOpen(false)} className="text-white hover:text-[#FFC107]">
+              ✕
+            </button>
+          </div>
+
+          {/* Messages */}
+          <div
+            className="flex-1 p-4 overflow-y-auto"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            <style>
+              {`
+                .chatbot-scrollbar::-webkit-scrollbar {
+                  display: none;
+                }
+              `}
+            </style>
+            <div className="chatbot-scrollbar">
+              {messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`mb-2 flex ${
+                    msg.sender === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  <div
+                    className={`max-w-[70%] p-2 rounded-lg ${
+                      msg.sender === "user"
+                        ? "bg-[#FFC107] text-black"
+                        : "bg-[#A9CBA4] text-[#2F4F4F]"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+
+          {/* Suggestions */}
+          <div className="p-4 border-t border-[#A9CBA4]">
+            <div className="flex flex-wrap gap-2 mb-2">
+              {suggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="text-sm bg-[#6B8E23] text-white px-2 py-1 rounded-full hover:bg-[#A9CBA4] transition"
+                >
+                  {suggestion.question}
+                </button>
+              ))}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleSendMessage} className="flex">
+              <input
+                type="text"
+                value={userInput}
+                onChange={(e) => setUserInput(e.target.value)}
+                placeholder="Posez une question..."
+                className="flex-1 p-2 border border-[#A9CBA4] rounded-l-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]"
+              />
+              <button
+                type="submit"
+                className="bg-[#FFC107] text-black p-2 rounded-r-md hover:bg-yellow-300"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                  />
+                </svg>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [cart, setCart] = useState([]);
   const [userName, setUserName] = useState("");
   const [userType, setUserType] = useState("");
   const [userPhoto, setUserPhoto] = useState("");
-  const [userId, setUserId] = useState(null); // Add userId state
+  const [userId, setUserId] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [products, setProducts] = useState([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -23,7 +197,7 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [comment, setComment] = useState("");
   const [comments, setComments] = useState([]);
-  const [userRating, setUserRating] = useState(0); // State for user's rating input
+  const [userRating, setUserRating] = useState(0);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -31,7 +205,7 @@ const Dashboard = () => {
       const user = JSON.parse(userData);
       setUserName(user.Prenom + " " + user.Nom);
       setUserType(user.typeuser);
-      setUserId(user.id); // Set userId
+      setUserId(user.id);
       if (user.photo) {
         setUserPhoto(user.photo);
       }
@@ -214,7 +388,7 @@ const Dashboard = () => {
     setUserName("");
     setUserType("");
     setUserPhoto("");
-    setUserId(null); // Clear userId
+    setUserId(null);
     setDropdownOpen(false);
     navigate("/");
   };
@@ -266,15 +440,15 @@ const Dashboard = () => {
   const openProductModal = (product) => {
     setSelectedProduct(product);
     setComment("");
-    setUserRating(0); // Reset rating when opening modal
+    setUserRating(0);
   };
 
   // Handle closing the modal
   const closeProductModal = () => {
     setSelectedProduct(null);
     setComment("");
-    setComments([]); // Clear comments when closing
-    setUserRating(0); // Clear rating when closing
+    setComments([]);
+    setUserRating(0);
   };
 
   // Handle adding a comment
@@ -299,7 +473,6 @@ const Dashboard = () => {
       });
 
       if (response.ok) {
-        // Fetch updated comments
         const commentsResponse = await fetch(`http://localhost:3000/api/comments/${productId}`);
         const updatedComments = await commentsResponse.json();
         setComments(updatedComments);
@@ -336,16 +509,14 @@ const Dashboard = () => {
       });
 
       if (response.ok) {
-        // Refresh the products list to get the updated average rating
         const updatedProductsResponse = await fetch("http://localhost:3000/api/produits");
         const updatedProducts = await updatedProductsResponse.json();
         setProducts(updatedProducts);
 
-        // Update the selected product to reflect the new average rating
         const updatedProduct = updatedProducts.find((p) => p.id === productId);
         setSelectedProduct(updatedProduct);
 
-        setUserRating(0); // Reset the rating input
+        setUserRating(0);
         alert("Note soumise avec succès !");
       } else {
         const errorData = await response.json();
@@ -360,7 +531,7 @@ const Dashboard = () => {
   // Render star ratings
   const renderStars = (rating) => {
     const stars = [];
-    const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
+    const roundedRating = Math.round(rating * 2) / 2;
     for (let i = 1; i <= 5; i++) {
       if (i <= roundedRating) {
         stars.push(<span key={i} className="text-[#FFC107]">★</span>);
@@ -683,7 +854,7 @@ const Dashboard = () => {
                   <span className="text-[#2F4F4F] font-bold">dt {product.prix}</span>
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent modal from opening when clicking "Ajouter"
+                      e.stopPropagation();
                       addToCart(product);
                     }}
                     className="px-4 py-2 bg-[#FFC107] text-black rounded-md hover:bg-yellow-300 transition"
@@ -850,6 +1021,9 @@ const Dashboard = () => {
           <p className="text-sm text-[#A9CBA4]">© 2025 WeeFarm. Tous droits réservés.</p>
         </div>
       </footer>
+
+      {/* Add Chatbot Component */}
+      <Chatbot />
     </div>
   );
 };

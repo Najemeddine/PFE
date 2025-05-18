@@ -3,7 +3,7 @@ import registerBackground from "../assets/images/nature.png";
 import clientImage from "../assets/images/client-image.jpg";
 import fournisseurImage from "../assets/images/fournisseur-image.jpg";
 import agricultureTechImage from "../assets/images/agri-tech-drone.jpg";
-import weefarmLogo from "../assets/images/weefarm-logo.jpg"; // Added logo import
+import weefarmLogo from "../assets/images/weefarm-logo.jpeg"; // Added logo import
 
 const Register = () => {
   const [userType, setUserType] = useState(null); // null, "client", ou "fournisseur"
