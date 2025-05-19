@@ -97,7 +97,7 @@ const Chatbot = () => {
           aria-label="Fenêtre de chatbot WeeFarm"
         >
           {/* Header */}
-          <div className="bg-[#2F4F4F] text-white p-4 rounded-t-2xl flex justify-between items-center">
+          <div className="bg-blue-600 text-white p-4 rounded-t-2xl flex justify-between items-center">
             <div className="flex items-center space-x-3">
               <h3 className="font-semibold text-base">WeeFarm Assistant</h3>
             </div>
