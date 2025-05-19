@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 const Chatbot = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { sender: "bot", text: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" }
+    { sender: "bot", text: "Bonjour ! Je suis votre assistant WeeFarm. Comment puis-je vous aider aujourd'hui ?" }
   ]);
   const [userInput, setUserInput] = useState("");
   const messagesEndRef = useRef(null);
@@ -13,19 +13,19 @@ const Chatbot = () => {
   const suggestions = [
     {
       question: "Quels sont vos produits les plus populaires ?",
-      answer: "Nos produits les plus populaires incluent les engrais organiques, les semences bio, et les équipements agricoles comme les pulvérisateurs. Consultez la section 'Nos Produits' pour plus de détails !"
+      answer: "Nos produits phares incluent les engrais organiques, les semences bio et les pulvérisateurs agricoles. Jetez un œil à la section 'Nos Produits' pour en savoir plus !"
     },
     {
       question: "Livrez-vous à domicile ?",
-      answer: "Oui, nous livrons à domicile dans tout le pays. Les frais de livraison varient selon la région. Ajoutez des produits à votre panier pour voir les options de livraison."
+      answer: "Oui, nous livrons partout dans le pays ! Les frais varient selon la région. Ajoutez des produits au panier pour voir les options de livraison."
     },
     {
       question: "Comment choisir le bon engrais ?",
-      answer: "Le choix de l'engrais dépend de votre type de sol et de culture. Par exemple, les engrais riches en azote conviennent aux légumes verts. Contactez-nous pour des conseils personnalisés !"
+      answer: "Cela dépend de votre sol et de vos cultures. Par exemple, un engrais riche en azote est idéal pour les légumes verts. Besoin de conseils personnalisés ? Contactez-nous !"
     },
     {
       question: "Proposez-vous des produits bio ?",
-      answer: "Absolument ! Nous avons une large gamme de produits bio, incluant des semences, des engrais, et des pesticides naturels. Filtrez par 'Fournitures agricoles' pour les voir."
+      answer: "Bien sûr ! Nous offrons une large gamme de produits bio : semences, engrais et pesticides naturels. Filtrez par 'Fournitures agricoles' pour les découvrir."
     }
   ];
 
@@ -44,27 +44,36 @@ const Chatbot = () => {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!userInput.trim()) return;
+    const trimmedInput = userInput.trim();
+    if (!trimmedInput) return;
 
     setMessages((prev) => [
       ...prev,
-      { sender: "user", text: userInput },
-      { sender: "bot", text: "Merci pour votre question ! Pour une réponse précise, essayez une de nos suggestions ou contactez notre support." }
+      { sender: "user", text: trimmedInput },
+      { sender: "bot", text: "Merci pour votre question ! Essayez une suggestion pour une réponse rapide ou contactez notre support pour plus de détails." }
     ]);
     setUserInput("");
   };
 
+  const handleKeyDownSuggestion = (e, suggestion) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      handleSuggestionClick(suggestion);
+    }
+  };
+
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-6 right-6 z-50">
       {/* Toggle Button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-[#FFC107] text-black p-4 rounded-full shadow-lg hover:bg-yellow-300 transition"
+          className="bg-blue-500 text-white p-5 rounded-full shadow-xl hover:scale-105 transition-all duration-300 animate-pulse"
+          aria-label="Ouvrir le chatbot"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6"
+            className="h-7 w-7"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -81,76 +90,80 @@ const Chatbot = () => {
 
       {/* Chatbot Window */}
       {isOpen && (
-        <div className="bg-[#F9F9F9] rounded-xl shadow-2xl w-80 h-[500px] flex flex-col">
+        <div
+          className="bg-white rounded-2xl shadow-2xl w-80 h-[500px] flex flex-col transform transition-all duration-300 scale-100 animate-fadeIn"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Fenêtre de chatbot WeeFarm"
+        >
           {/* Header */}
-          <div className="bg-[#2F4F4F] text-white p-4 rounded-t-xl flex justify-between items-center">
-            <h3 className="font-bold">WeeFarm Assistant</h3>
-            <button onClick={() => setIsOpen(false)} className="text-white hover:text-[#FFC107]">
+          <div className="bg-[#2F4F4F] text-white p-4 rounded-t-2xl flex justify-between items-center">
+            <div className="flex items-center space-x-3">
+              <h3 className="font-semibold text-base">WeeFarm Assistant</h3>
+            </div>
+            <button
+              onClick={() => setIsOpen(false)}
+              className="text-white hover:text-gray-200 transition"
+              aria-label="Fermer le chatbot"
+            >
               ✕
             </button>
           </div>
 
           {/* Messages */}
-          <div
-            className="flex-1 p-4 overflow-y-auto"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            <style>
-              {`
-                .chatbot-scrollbar::-webkit-scrollbar {
-                  display: none;
-                }
-              `}
-            </style>
-            <div className="chatbot-scrollbar">
-              {messages.map((msg, index) => (
+          <div className="flex-1 p-4 overflow-y-auto chatbot-scrollbar">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`mb-3 flex ${
+                  msg.sender === "user" ? "justify-end" : "justify-start"
+                } animate-slideIn`}
+              >
                 <div
-                  key={index}
-                  className={`mb-2 flex ${
-                    msg.sender === "user" ? "justify-end" : "justify-start"
+                  className={`max-w-[70%] p-2 rounded-lg ${
+                    msg.sender === "user"
+                      ? "bg-blue-500 text-white"
+                      : "bg-white text-gray-800 border border-gray-200 shadow-sm"
                   }`}
                 >
-                  <div
-                    className={`max-w-[70%] p-2 rounded-lg ${
-                      msg.sender === "user"
-                        ? "bg-[#FFC107] text-black"
-                        : "bg-[#A9CBA4] text-[#2F4F4F]"
-                    }`}
-                  >
-                    {msg.text}
-                  </div>
+                  <p className="text-sm">{msg.text}</p>
                 </div>
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
           </div>
 
           {/* Suggestions */}
-          <div className="p-4 border-t border-[#A9CBA4]">
-            <div className="flex flex-wrap gap-2 mb-2">
+          <div className="p-2 border-t border-gray-200 bg-gray-50">
+            <div className="space-y-2 mb-3">
               {suggestions.map((suggestion, index) => (
                 <button
                   key={index}
                   onClick={() => handleSuggestionClick(suggestion)}
-                  className="text-sm bg-[#6B8E23] text-white px-2 py-1 rounded-full hover:bg-[#A9CBA4] transition"
+                  onKeyDown={(e) => handleKeyDownSuggestion(e, suggestion)}
+                  className="w-full text-left text-sm text-gray-700 px-3 py-2 border border-blue-300 rounded-md hover:bg-blue-50 transition-all duration-200 shadow-sm animate-fadeInSuggestion"
+                  aria-label={`Suggestion: ${suggestion.question}`}
                 >
                   {suggestion.question}
                 </button>
               ))}
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSendMessage} className="flex">
+            {/* Input Area */}
+            <form onSubmit={handleSendMessage} className="flex items-center">
               <input
                 type="text"
                 value={userInput}
                 onChange={(e) => setUserInput(e.target.value)}
                 placeholder="Posez une question..."
-                className="flex-1 p-2 border border-[#A9CBA4] rounded-l-md focus:outline-none focus:ring-2 focus:ring-[#6B8E23]"
+                className="flex-1 p-2 border border-gray-300 rounded-l-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+                maxLength={200}
+                aria-label="Saisir un message"
               />
               <button
                 type="submit"
-                className="bg-[#FFC107] text-black p-2 rounded-r-md hover:bg-yellow-300"
+                className="bg-blue-500 text-white p-2 rounded-r-md hover:bg-blue-600 transition-all duration-200 shadow-sm"
+                aria-label="Envoyer le message"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -171,6 +184,38 @@ const Chatbot = () => {
           </div>
         </div>
       )}
+      <style>
+        {`
+          .chatbot-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .chatbot-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes fadeInSuggestion {
+            from { opacity: 0; }
+            to { opacity: 1; }
+          }
+          .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out;
+          }
+          .animate-slideIn {
+            animation: slideIn 0.2s ease-out;
+          }
+          .animate-fadeInSuggestion {
+            animation: fadeInSuggestion 0.3s ease-out;
+          }
+        `}
+      </style>
     </div>
   );
 };
@@ -1022,7 +1067,6 @@ const Dashboard = () => {
         </div>
       </footer>
 
-      {/* Add Chatbot Component */}
       <Chatbot />
     </div>
   );
