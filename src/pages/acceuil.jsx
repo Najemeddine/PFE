@@ -244,6 +244,14 @@ const Dashboard = () => {
   const [comments, setComments] = useState([]);
   const [userRating, setUserRating] = useState(0);
 
+  // State for trending products
+  const [trendingProducts, setTrendingProducts] = useState([]);
+  const [trendingPeriod, setTrendingPeriod] = useState("week"); // Default to week
+  const [trendingCategory, setTrendingCategory] = useState("all"); // Default to all categories
+  const trendingCarousel = useRef();
+  const [isTrendingAnimating, setIsTrendingAnimating] = useState(false);
+  const [trendingPosition, setTrendingPosition] = useState(0);
+
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -293,6 +301,23 @@ const Dashboard = () => {
     fetchProducts();
   }, []);
 
+  // Fetch trending products
+  useEffect(() => {
+    const fetchTrendingProducts = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/produits/trending?period=${trendingPeriod}&category=${trendingCategory}&limit=6`
+        );
+        const data = await response.json();
+        setTrendingProducts(data);
+      } catch (error) {
+        console.error("Error fetching trending products:", error);
+      }
+    };
+
+    fetchTrendingProducts();
+  }, [trendingPeriod, trendingCategory]);
+
   // Fetch comments when a product modal is opened
   useEffect(() => {
     if (selectedProduct) {
@@ -335,16 +360,17 @@ const Dashboard = () => {
     }
   }, [products]);
 
-  const getItemWidth = () => {
-    if (!carousel.current || !carousel.current.children.length) return 0;
-    return carousel.current.children[0].offsetWidth + 24;
+  const getItemWidth = (carouselRef) => {
+    if (!carouselRef.current || !carouselRef.current.children.length) return 0;
+    return carouselRef.current.children[0].offsetWidth + 24;
   };
 
-  const getVisibleItems = () => {
-    if (!carousel.current) return 0;
-    return Math.floor(carousel.current.offsetWidth / getItemWidth());
+  const getVisibleItems = (carouselRef) => {
+    if (!carouselRef.current) return 0;
+    return Math.floor(carouselRef.current.offsetWidth / getItemWidth(carouselRef));
   };
 
+  // Handle carousel for promotions
   useEffect(() => {
     if (!promoProducts.length) return;
 
@@ -362,8 +388,8 @@ const Dashboard = () => {
 
     setIsAnimating(true);
 
-    const itemWidth = getItemWidth();
-    const visibleItems = getVisibleItems();
+    const itemWidth = getItemWidth(carousel);
+    const visibleItems = getVisibleItems(carousel);
     const totalItems = promoProducts.length;
 
     if (currentPosition >= (totalItems - visibleItems) * itemWidth) {
@@ -387,11 +413,11 @@ const Dashboard = () => {
 
     setIsAnimating(true);
 
-    const itemWidth = getItemWidth();
+    const itemWidth = getItemWidth(carousel);
     const totalItems = promoProducts.length;
 
     if (currentPosition <= 0) {
-      const endPosition = (totalItems - getVisibleItems()) * itemWidth;
+      const endPosition = (totalItems - getVisibleItems(carousel)) * itemWidth;
       carousel.current.scrollTo({ left: endPosition, behavior: 'auto' });
       setCurrentPosition(endPosition);
       setTimeout(() => {
@@ -406,6 +432,72 @@ const Dashboard = () => {
       setCurrentPosition(prev => prev - itemWidth);
       setTimeout(() => {
         setIsAnimating(false);
+      }, 500);
+    }
+  };
+
+  // Handle carousel for trending products
+  useEffect(() => {
+    if (!trendingProducts.length) return;
+
+    const interval = setInterval(() => {
+      if (!isTrendingAnimating) {
+        handleTrendingNext();
+      }
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [trendingProducts, isTrendingAnimating, trendingPosition]);
+
+  const handleTrendingNext = () => {
+    if (isTrendingAnimating || !trendingCarousel.current || !trendingProducts.length) return;
+
+    setIsTrendingAnimating(true);
+
+    const itemWidth = getItemWidth(trendingCarousel);
+    const visibleItems = getVisibleItems(trendingCarousel);
+    const totalItems = trendingProducts.length;
+
+    if (trendingPosition >= (totalItems - visibleItems) * itemWidth) {
+      trendingCarousel.current.scrollBy({ left: itemWidth, behavior: 'smooth' });
+      setTimeout(() => {
+        trendingCarousel.current.scrollTo({ left: 0, behavior: 'auto' });
+        setTrendingPosition(0);
+        setIsTrendingAnimating(false);
+      }, 500);
+    } else {
+      trendingCarousel.current.scrollBy({ left: itemWidth, behavior: 'smooth' });
+      setTrendingPosition(prev => prev + itemWidth);
+      setTimeout(() => {
+        setIsTrendingAnimating(false);
+      }, 500);
+    }
+  };
+
+  const handleTrendingPrev = () => {
+    if (isTrendingAnimating || !trendingCarousel.current || !trendingProducts.length) return;
+
+    setIsTrendingAnimating(true);
+
+    const itemWidth = getItemWidth(trendingCarousel);
+    const totalItems = trendingProducts.length;
+
+    if (trendingPosition <= 0) {
+      const endPosition = (totalItems - getVisibleItems(trendingCarousel)) * itemWidth;
+      trendingCarousel.current.scrollTo({ left: endPosition, behavior: 'auto' });
+      setTrendingPosition(endPosition);
+      setTimeout(() => {
+        trendingCarousel.current.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+        setTrendingPosition(prev => prev - itemWidth);
+        setTimeout(() => {
+          setIsTrendingAnimating(false);
+        }, 500);
+      }, 50);
+    } else {
+      trendingCarousel.current.scrollBy({ left: -itemWidth, behavior: 'smooth' });
+      setTrendingPosition(prev => prev - itemWidth);
+      setTimeout(() => {
+        setIsTrendingAnimating(false);
       }, 500);
     }
   };
@@ -481,11 +573,24 @@ const Dashboard = () => {
     setSearchTerm("");
   };
 
-  // Handle opening the modal
-  const openProductModal = (product) => {
-    setSelectedProduct(product);
-    setComment("");
-    setUserRating(0);
+  // Handle opening the modal with getProduitById
+  const openProductModal = async (product) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/produits/${product.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch product details');
+      }
+      const updatedProduct = await response.json();
+      setSelectedProduct(updatedProduct);
+      setComment("");
+      setUserRating(0);
+    } catch (error) {
+      console.error("Error fetching product details:", error);
+      // Fallback to the original product if fetch fails
+      setSelectedProduct(product);
+      setComment("");
+      setUserRating(0);
+    }
   };
 
   // Handle closing the modal
@@ -857,6 +962,103 @@ const Dashboard = () => {
         </div>
       </section>
 
+      {/* Trending Products Section */}
+      <section className="py-12 bg-[#f9f9f9f8]">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold text-[#2F4F4F] mb-4 sm:mb-0 text-center sm:text-left">
+              Produits Tendance
+            </h2>
+            <div className="flex space-x-4">
+              <select
+                className="p-2 bg-white border border-gray-300 rounded-md shadow-sm text-[#2F4F4F]"
+                value={trendingPeriod}
+                onChange={(e) => setTrendingPeriod(e.target.value)}
+              >
+                <option value="week">Cette semaine</option>
+                <option value="month">Ce mois</option>
+              </select>
+              <select
+                className="p-2 bg-white border border-gray-300 rounded-md shadow-sm text-[#2F4F4F]"
+                value={trendingCategory}
+                onChange={(e) => setTrendingCategory(e.target.value)}
+              >
+                {categories.map((category, index) => (
+                  <option key={index} value={category}>
+                    {category === "all" ? "Toutes les catégories" : category}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {trendingProducts.length > 0 ? (
+            <div className="relative">
+              {trendingProducts.length > 3 && (
+                <button
+                  onClick={handleTrendingPrev}
+                  disabled={isTrendingAnimating}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-[#F9F9F9] border border-[#2F4F4F] shadow-lg p-2 rounded-full hover:bg-gray-100 transition hidden md:block disabled:opacity-50"
+                >
+                  ◀
+                </button>
+              )}
+              <div
+                ref={trendingCarousel}
+                className="flex overflow-x-auto space-x-6 scroll-smooth no-scrollbar px-8"
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none'
+                }}
+                onScroll={(e) => {
+                  setTrendingPosition(e.currentTarget.scrollLeft);
+                }}
+              >
+                {trendingProducts.map((product, index) => (
+                  <div
+                    key={`${product.id}-${index}`}
+                    className="min-w-[280px] bg-[#F9F9F9] rounded-xl shadow-xl p-6 relative flex-shrink-0"
+                  >
+                    <div className="absolute top-2 right-2 bg-[#FF6347] text-white text-sm font-bold py-1 px-3 rounded-full">
+                      Tendance
+                    </div>
+                    <img
+                      src={product.photo || `/src/assets/images/produits/${product.Nom}.jpg`}
+                      alt={product.Nom}
+                      className="rounded-md h-40 w-full object-cover mb-4"
+                    />
+                    <h3 className="text-lg font-bold text-[#2F4F4F]">{product.Nom}</h3>
+                    <div className="flex items-center mb-2">
+                      {renderStars(product.rating || 0)}
+                      <span className="ml-2 text-sm text-gray-600">({product.rating || 0})</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-[#2F4F4F] font-bold">dt {product.prix}</span>
+                      <button
+                        onClick={() => addToCart(product)}
+                        className="px-3 py-1 bg-[#FFC107] text-black rounded-md hover:bg-yellow-300 transition text-sm"
+                      >
+                        Ajouter
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {trendingProducts.length > 3 && (
+                <button
+                  onClick={handleTrendingNext}
+                  disabled={isTrendingAnimating}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-[#F9F9F9] border border-[#2F4F4F] shadow-lg p-2 rounded-full hover:bg-gray-100 transition hidden md:block disabled:opacity-50"
+                >
+                  ▶
+                </button>
+              )}
+            </div>
+          ) : (
+            <p className="text-center text-gray-500">Aucun produit tendance pour le moment.</p>
+          )}
+        </div>
+      </section>
+
       <section className="py-6">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
@@ -1013,7 +1215,7 @@ const Dashboard = () => {
                           </div>
                           <div className="flex-1">
                             <div className="flex justify-between items-center">
-                              <span className="font-medium text-[#2F4F4F]">{comment.Prenom} {comment.Nom}</span>
+                              <span className="font-medium text-[#2F4F4F]">{comment.Prenom} ${comment.Nom}</span>
                               <span className="text-sm text-gray-500">{new Date(comment.date_creation).toLocaleDateString()}</span>
                             </div>
                             <p className="text-gray-600 mt-1">{comment.contenu}</p>
