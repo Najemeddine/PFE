@@ -38,12 +38,7 @@ const Dashboardadmin = () => {
     numtel: '',
   });
 
-  const supplierStats = [
-    { name: "Fournitures agricoles", value: 50 },
-    { name: "Équipements agricoles", value: 30 },
-    { name: "Alimentation animale", value: 20 },
-    { name: "Produits bio", value: 25 },
-  ];
+  const [supplierStats, setSupplierStats] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -77,8 +72,11 @@ const Dashboardadmin = () => {
       fetch("http://localhost:3000/api/admin-statistics", {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       }).then(res => res.json()),
+      fetch("http://localhost:3000/api/supplier-statistics", {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      }).then(res => res.json()),
     ])
-      .then(([suppliersData, clientsData, productsData, ordersData, statsData]) => {
+      .then(([suppliersData, clientsData, productsData, ordersData, statsData, supplierStatsData]) => {
         setSuppliers(suppliersData);
         setClients(clientsData);
         setProducts(productsData);
@@ -86,6 +84,7 @@ const Dashboardadmin = () => {
         setStats(statsData);
         const sortedProducts = [...productsData].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 5);
         setBestRatedProducts(sortedProducts);
+        setSupplierStats(supplierStatsData); // New state for supplier stats
         setIsLoading(false);
       })
       .catch(error => {
@@ -270,8 +269,8 @@ const Dashboardadmin = () => {
                 key={item.tab}
                 onClick={() => setSelectedTab(item.tab)}
                 className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${selectedTab === item.tab
-                    ? 'bg-[#FFC107] text-[#2F4F4F] shadow-md'
-                    : 'hover:bg-[#6B8E23] text-white'
+                  ? 'bg-[#FFC107] text-[#2F4F4F] shadow-md'
+                  : 'hover:bg-[#6B8E23] text-white'
                   }`}
                 data-tooltip-id={`sidebar-tooltip-${item.tab}`}
                 data-tooltip-content={item.label}
@@ -632,10 +631,10 @@ const Dashboardadmin = () => {
                         <td className={tdStyles}>
                           <span
                             className={`px-2 py-1 rounded-full text-sm font-semibold ${order.status === 2
-                                ? "bg-[#A9CBA4] text-[#2F4F4F]"
-                                : order.status === 1
-                                  ? "bg-[#FFC107] text-[#2F4F4F]"
-                                  : "bg-red-200 text-red-800"
+                              ? "bg-[#A9CBA4] text-[#2F4F4F]"
+                              : order.status === 1
+                                ? "bg-[#FFC107] text-[#2F4F4F]"
+                                : "bg-red-200 text-red-800"
                               }`}
                           >
                             {order.status === 1 ? "En Attente" : order.status === 2 ? "Livrée" : "Annulé"}
